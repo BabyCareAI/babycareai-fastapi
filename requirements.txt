@@ -1,8 +1,12 @@
-fastapi
+fastapi~=0.115.0
 uvicorn[standard]
-pydantic
-python-dotenv
+pydantic~=2.9.2
+python-dotenv~=1.0.1
 openai
 langchain_openai
-langchain-community
+langchain-community~=0.3.1
 faiss-cpu
+langchain-openai~=0.2.2
+langchain~=0.3.2
+aioredis~=2.0.1
+redis~=5.2.0
