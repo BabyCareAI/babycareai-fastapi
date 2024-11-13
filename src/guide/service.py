@@ -42,19 +42,10 @@ async def initialize_service():
     prompt_template_str = """\
 당신은 의료 전문가입니다. 다음 정보를 기반으로 정확한 의료적 설명을 제공하세요. 답변은 의료 지식이 부족한 일반인도 이해할 수 있도록 쉽고 간단하게 작성하고, 부드러운 말투로 작성하세요.
 
-질환명: {disease_name}
-발열 여부: {fever_status}
-출혈 여부: {blooding_status}
-나이: {age}
-증상: {symptoms}
-
-컨텍스트에 제공된 정보를 사용하여 답변을 작성하세요. 컨텍스트에 존재하지 않는 정보를 제공하면 처벌받을 수 있습니다. 신중히 답변하세요.
-
-컨텍스트:
-{context}
+질환 예측 딥러닝 모델 추론 결과: {prediction_result}
 
 답변양식:
-선택한 사진을 기반으로 예측한 피부질환은 {disease_name}입니다. 아래의 정보는 예측한 진단명과, 입력하신 증상과 정보를 토대로 작성한 답변입니다.
+선택한 사진을 기반으로 예측한 결과는 {prediction_result}입니다. 아래의 정보는 예측한 진단명과, 입력하신 증상과 정보를 토대로 작성한 답변입니다.
 
 1. 위험성
 
@@ -66,6 +57,8 @@ async def initialize_service():
 
 5. 병원 방문 필요의 긴급성
 
+6. 참고한 질환 예측 딥러닝 모델 추론 결과: {prediction_result}
+
 작성된 답변은 예측한 질환에 대해 서울아산병원의 건강정보를 참조하여 작성된 답변입니다. 답변 내용은 참고하시되, 가능한 병원을 방문해주세요.
 
 답변 작성시 주의사항:
@@ -73,7 +66,7 @@ async def initialize_service():
 """
     prompt = PromptTemplate(
         template=prompt_template_str,
-        input_variables=["disease_name", "fever_status", "blooding_status", "age", "symptoms", "context"]
+        input_variables=['prediction_result']
     )
 
 def get_vectorstore(disease_name: str):
@@ -82,32 +75,34 @@ def get_vectorstore(disease_name: str):
         raise HTTPException(status_code=404, detail="Disease not found")
     return vectorstore
 
-async def generate_response(input_data: InputData):
+async def generate_guide_from_prediction(input_data: InputData):
     # Extract input data
-    disease_name = input_data.disease_name
-    fever_status = input_data.fever_status
-    blooding_status = input_data.blooding_status
-    age = input_data.age
-    symptoms = input_data.symptoms
+    # disease_name = input_data.disease_name
+    # fever_status = input_data.fever_status
+    # blooding_status = input_data.blooding_status
+    # age = input_data.age
+    # symptoms = input_data.symptoms
+    prediction_result = input_data.prediction_result
 
     # Get vector store for the disease
-    vectorstore = get_vectorstore(disease_name)
+    # vectorstore = get_vectorstore(disease_name)
 
     # Initialize retriever
-    retriever = vectorstore.as_retriever()
+    # retriever = vectorstore.as_retriever()
 
     # Retrieve context documents based on symptoms
-    query = symptoms
-    context_docs = retriever.get_relevant_documents(query)
-    context = "\n".join([doc.page_content for doc in context_docs])
+    # query = symptoms
+    # context_docs = retriever.get_relevant_documents(query)
+    # context = "\n".join([doc.page_content for doc in context_docs])
 
     inputs = {
-        "disease_name": disease_name,
-        "fever_status": fever_status,
-        "blooding_status": blooding_status,
-        "age": age,
-        "symptoms": symptoms,
-        "context": context
+        # "disease_name": disease_name,
+        # "fever_status": fever_status,
+        # "blooding_status": blooding_status,
+        # "age": age,
+        # "symptoms": symptoms,
+        # "context": context,
+        "prediction_result": prediction_result
     }
 
     # Chain the prompt with the LLM
