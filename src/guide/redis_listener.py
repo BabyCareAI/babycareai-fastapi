@@ -5,11 +5,19 @@ from .service import generate_guide_from_prediction
 from .schemas import InputData
 from redis.exceptions import ResponseError
 
+
+'''
+redis stream에서 이미지 예측 결과를 받아서 가이드를 생성하기 위한 비동기 함수
+redis 키: diagnosis:prediction:result:stream
+redis 소비자 그룹: guidance_service_group
+producers: PredictService.java
+consumers: redis_listener.py
+'''
 async def redis_stream_listener():
     redis_client = redis.Redis(host='localhost', port=6379, db=0)
-    stream_name = "imagePredictionStream"
-    group_name = "fastapiGroup"
-    consumer_name = "fastapiConsumer"
+    stream_name = "diagnosis:prediction:result:stream"
+    group_name = "guidance_service_group"
+    consumer_name = "guidance_service_consumer"
 
     # Create consumer group if it doesn't exist
     try:
