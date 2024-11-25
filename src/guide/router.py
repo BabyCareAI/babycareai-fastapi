@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body
+import os
+from dotenv import load_dotenv
 import redis.asyncio as redis
 import json
 from .service import generate_guide_from_prediction
@@ -7,8 +9,11 @@ from .schemas import InputData
 router = APIRouter()
 
 # Initialize Redis client (assuming default connection parameters)
-redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-
+load_dotenv()
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_DB = int(os.getenv("REDIS_DB"))
+redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 @router.post("/api/diagnosis/generate")
 async def generate_diagnosis(diagnosis_id: str = Body(..., embed=True)):
