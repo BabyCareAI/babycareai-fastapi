@@ -40,24 +40,26 @@ async def initialize_service():
 
     # Define the prompt template
     prompt_template_str = """\
-당신은 의료 전문가입니다. 다음 정보를 기반으로 정확한 의료적 설명을 제공하세요. 답변은 의료 지식이 부족한 일반인도 이해할 수 있도록 쉽고 간단하게 작성하고, 부드러운 말투로 작성하세요.
-
-질환 예측 딥러닝 모델 추론 결과: {prediction_result}
+당신은 의료 전문가입니다. 질환 예측 딥러닝 모델 추론 결과와 사용자가 선택한 추가 증상을 기반으로 정확한 의료적 설명을 제공하세요. 답변은 의료 지식이 부족한 일반인도 이해할 수 있도록 쉽고 간단하게 작성하고, 부드러운 말투로 작성하세요.
+- 질환 예측 딥러닝 모델 추론 결과: {prediction_result}
+- 사용자가 선택한 추가 증상: {symptoms}
 
 답변양식:
-선택한 사진을 기반으로 예측한 결과는 {prediction_result}입니다. 아래의 정보는 예측한 진단명과, 입력하신 증상과 정보를 토대로 작성한 답변입니다.
+아래의 정보는 예측한 진단명과, 입력하신 증상과 정보를 토대로 작성한 답변입니다.
 
-1. 위험성
+1. 예측한 결과
 
-2. 전염성
+2. 위험성
 
-3. 응급 처치 방법
+3. 전염성
 
-4. 가정내 조치 방법
+4. 응급 처치 방법
 
-5. 병원 방문 필요의 긴급성
+5. 가정내 조치 방법
 
-6. 참고한 질환 예측 딥러닝 모델 추론 결과: {prediction_result}
+6. 병원 방문 필요의 긴급성
+
+7. 참고한 피부 질환 예측 딥러닝 모델 추론 결과: {prediction_result}
 
 작성된 답변은 예측한 질환에 대해 서울아산병원의 건강정보를 참조하여 작성된 답변입니다. 답변 내용은 참고하시되, 가능한 병원을 방문해주세요.
 
@@ -66,7 +68,7 @@ async def initialize_service():
 """
     prompt = PromptTemplate(
         template=prompt_template_str,
-        input_variables=['prediction_result']
+        input_variables=['symptoms', 'prediction_result']
     )
 
 def get_vectorstore(disease_name: str):
@@ -81,7 +83,7 @@ async def generate_guide_from_prediction(input_data: InputData):
     # fever_status = input_data.fever_status
     # blooding_status = input_data.blooding_status
     # age = input_data.age
-    # symptoms = input_data.symptoms
+    symptoms = input_data.symptoms
     prediction_result = input_data.prediction_result
 
     # Get vector store for the disease
@@ -100,7 +102,7 @@ async def generate_guide_from_prediction(input_data: InputData):
         # "fever_status": fever_status,
         # "blooding_status": blooding_status,
         # "age": age,
-        # "symptoms": symptoms,
+        "symptoms": symptoms,
         # "context": context,
         "prediction_result": prediction_result
     }
