@@ -5,6 +5,7 @@
 https://baby-care-ai-app.vercel.app
 
 https://github.com/user-attachments/assets/09b2692a-c152-4230-9bdc-8dd68905ebef
+
 (현재는 피부질환 예측 기능같은 경우 Amazon SageMaker 실시간 추론에서 서버리스추론으로 전환하였습니다.)
 
 # 기능 
