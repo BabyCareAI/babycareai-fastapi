@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 import redis.asyncio as redis
 import json
-from .service import generate_guide_from_prediction
-from .schemas import InputData
+from src.app.diagnosis.services.diagnostician import generate_guide_from_prediction
+from src.app.diagnosis.schemas.diagnostician import InputData
 
 router = APIRouter()
 
@@ -41,10 +41,10 @@ async def generate_diagnosis(diagnosis_id: str = Body(..., embed=True)):
             prediction_result=prediction_result
         )
 
-        # Call the service function to generate the guide
+        # Call the service function to generate the app
         guide = await generate_guide_from_prediction(input_data)
 
-        return {"guide": guide}
+        return {"app": guide}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

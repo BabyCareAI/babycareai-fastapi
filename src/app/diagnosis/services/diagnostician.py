@@ -6,7 +6,7 @@ from langchain.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 from fastapi import HTTPException
-from .schemas import InputData
+from src.app.diagnosis.schemas.diagnostician import InputData
 
 # Global variables
 embeddings = None

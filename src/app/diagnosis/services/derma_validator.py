@@ -1,0 +1,1 @@
+# C:\Users\BaekSeungJin\FastAPIprojects\myapi\src\app\diagnosis\services\derma_validator.py

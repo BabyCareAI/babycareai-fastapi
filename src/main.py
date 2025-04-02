@@ -1,10 +1,9 @@
-import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
-from guide.router import router as nlp_router
-from guide.service import initialize_service
+from src.app.diagnosis.api.routers.diagnostician import router as nlp_router
 from dotenv import load_dotenv
 import os
+
 
 load_dotenv()
 
@@ -23,7 +22,3 @@ app.add_middleware(
 
 # 라우터 포함
 app.include_router(nlp_router)
-
-@app.on_event("startup")
-async def startup_event():
-    await initialize_service()
