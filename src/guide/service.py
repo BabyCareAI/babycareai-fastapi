@@ -2,8 +2,8 @@ import json
 import os
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_community.vectorstores import FAISS
 from langchain.prompts import PromptTemplate
+from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 from fastapi import HTTPException
 from .schemas import InputData
