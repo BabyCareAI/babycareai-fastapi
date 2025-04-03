@@ -67,21 +67,30 @@ class DermaValidatorService:
     async def _validate_with_llm(self, base64_image: str) -> bool:
         """LLM을 사용하여 이미지가 피부 관련 이미지인지 검증합니다."""
         system_prompt = """
-        당신은 의료 이미지 분석 전문가입니다. 
-        사용자가 제공한 이미지가 피부(skin) 관련 이미지인지 판단해야 합니다.
-        피부 관련 이미지란 피부 질환, 피부 상태, 피부의 일부분을 보여주는 이미지를 의미합니다.
+        You are an expert in medical image analysis. 
+        You need to determine whether the image provided by the user is related to skin conditions.
+        A skin-related image refers to images showing skin diseases, skin conditions, or parts of the skin.
         
-        분석 결과로 이미지가 피부 관련 이미지인 경우 'YES'만 출력하고, 
-        피부 관련 이미지가 아닌 경우 'NO'만 출력하세요.
-        판단 이유는 작성하지 마세요.
+        If the image is related to skin, output only 'YES'.
+        If the image is not related to skin, output only 'NO'.
+        Do not provide any explanation.
         """
-        
+        # (한국어 버전)
+        # """
+        # 당신은 의료 이미지 분석 전문가입니다.
+        # 사용자가 제공한 이미지가 피부(skin) 관련 이미지인지 판단해야 합니다.
+        # 피부 관련 이미지란 피부 질환, 피부 상태, 피부의 일부분을 보여주는 이미지를 의미합니다.
+        #
+        # 분석 결과로 이미지가 피부 관련 이미지인 경우 'YES'만 출력하고,
+        # 피부 관련 이미지가 아닌 경우 'NO'만 출력하세요.
+        # 판단 이유는 작성하지 마세요.
+        # """
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=[
                 {
                     "type": "text",
-                    "text": "이 이미지가 피부 관련 이미지인지 판단해주세요."
+                    "text": "Please determine whether this image is related to skin conditions."    # "이 이미지가 피부 관련 이미지인지 판단해주세요."
                 },
                 {
                     "type": "image_url",
