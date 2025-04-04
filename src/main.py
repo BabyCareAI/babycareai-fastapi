@@ -1,14 +1,13 @@
-import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
-from guide.router import router as nlp_router
-from guide.service import initialize_service
+from src.app.diagnosis.api.routers.derma_validator import router as image_validation
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
-app = FastAPI(root_path="/fastapi")
+app = FastAPI(root_path="/fastapi", title="babycareai API", version="0.1")
 
 cors_origins = os.getenv("CORS_ORIGINS", "").split(",")
 
@@ -22,8 +21,4 @@ app.add_middleware(
 )
 
 # 라우터 포함
-app.include_router(nlp_router)
-
-@app.on_event("startup")
-async def startup_event():
-    await initialize_service()
+app.include_router(image_validation)

@@ -7,6 +7,11 @@ langchain_openai
 langchain-community~=0.3.1
 faiss-cpu
 langchain-openai~=0.2.2
-langchain~=0.3.2
+langchain-google-genai~=2.1.2
+langchain~=0.3.7
 aioredis~=2.0.1
 redis~=5.2.0
+boto3~=1.28.38
+pytest~=7.4.0
+pytest-asyncio~=0.21.1
+pytest-mock~=3.11.1
