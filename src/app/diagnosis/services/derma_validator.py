@@ -1,9 +1,8 @@
 # 이미지 검증 api
 import boto3
 import os
-import io
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema.messages import HumanMessage, SystemMessage
 import base64
 
@@ -23,10 +22,10 @@ S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 # 이미지 검증 서비스
 class DermaValidatorService:
     def __init__(self):
-        self.model = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=1,
-            max_tokens=1000
+        self.model = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-lite",
+            temperature=0,
+            max_output_tokens=200
         )
     
     async def validate_skin_image(self, diagnosis_id: str):
