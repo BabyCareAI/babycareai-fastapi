@@ -3,10 +3,10 @@ from fastapi import APIRouter, HTTPException
 from src.app.diagnosis.schemas.derma_validator import DiagnosisIdInput, ValidationResult
 from src.app.diagnosis.services.derma_validator import derma_validator_service
 
-router = APIRouter(prefix="/validate", tags=["Validation"])
+router = APIRouter(prefix="/api/v1/babyderm", tags=["Validation"])
 
 
-@router.post("/skin-image", response_model=ValidationResult)
+@router.post("/validate", response_model=ValidationResult)
 async def validate_skin_image(input_data: DiagnosisIdInput):
     """
     진단 ID로 S3에서 이미지를 가져와 피부 관련 이미지인지 검증합니다.
