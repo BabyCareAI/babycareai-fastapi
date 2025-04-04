@@ -16,3 +16,6 @@ def setup_test_env():
     os.environ["S3_BUCKET_NAME"] = "test-bucket"
     
     yield
+
+    # 테스트 후 환경 변수 정리 (필요한 경우)
+    # pass
