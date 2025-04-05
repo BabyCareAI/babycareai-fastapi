@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from src.app.diagnosis.schemas.derma_validator import DiagnosisIdInput, ValidationResult
 from src.app.diagnosis.services.derma_validator import derma_validator_service
 
-router = APIRouter(prefix="/api/v1/babyderm", tags=["Validation"])
+router = APIRouter(prefix="/api/v1/diagnosis", tags=["Validation"])
 
 
 @router.post("/validate", response_model=ValidationResult)
