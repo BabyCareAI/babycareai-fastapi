@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
-from src.app.diagnosis.api.routers.derma_validator import router as image_validation
+from src.app.diagnosis.api.routers.image_validator import router as image_validation
 from dotenv import load_dotenv
 import os
 

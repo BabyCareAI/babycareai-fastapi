@@ -1,7 +1,7 @@
 import pytest
 import base64
 from unittest.mock import patch, MagicMock, AsyncMock
-from src.app.diagnosis.services.derma_validator import DermaValidatorService
+from src.app.diagnosis.services.image_validator import DermaValidatorService
 
 # 테스트용 이미지 데이터 (더미 데이터)
 DUMMY_IMAGE_DATA = b"dummy_image_data"

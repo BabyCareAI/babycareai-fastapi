@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock, AsyncMock
-from src.app.diagnosis.api.routers.derma_validator import router
+from src.app.diagnosis.api.routers.image_validator import router
 from fastapi import FastAPI
 
 # FastAPI 앱 생성
