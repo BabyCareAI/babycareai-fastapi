@@ -1,5 +1,9 @@
 # 모찌케어-FastAPI
 
+# 문서화중입니다.
+
+# ---legacy---
+
 초보 부모들은 아기가 병원에 가봐야 하는 상황인지조차 파악하기 어려울 때가 많다. 특히 영유아기에 자주 발생하는 크고 작은 피부 질환들은 때로는 심각한 피부 질환과 구분하기 어려울 수 있다. '모찌케어'는 아기의 피부 병변 이미지와 추가적인 증상들을 종합적으로 분석하여 피부 질환을 분석하고 가정 내 처치 방법, 증상의 중증도, 병원 내원 필요 여부 등의 정보를 제공한다.
 
 https://baby-care-ai-app.vercel.app
@@ -39,3 +43,4 @@ https://github.com/user-attachments/assets/09b2692a-c152-4230-9bdc-8dd68905ebef
 # 서비스 흐름 및 API
 
 <img src="https://github.com/user-attachments/assets/e109086b-31b4-4293-9809-5c792479ea2a" width="600px;" alt="">
+```
