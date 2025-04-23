@@ -19,8 +19,6 @@ async def describe_skin_image(input_data: DiagnosisIdInput):
     """
     try:
         result = await image_descriptor_service.describe_skin_image(input_data.diagnosis_id)
-        return ImageDescriptionResult(
-            description=result["description"]
-        )
+        return ImageDescriptionResult(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"이미지 상태 설명 중 오류가 발생했습니다: {str(e)}")

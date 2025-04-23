@@ -16,23 +16,25 @@ s3_client = boto3.client(
 # S3 버킷 이름
 S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 
-def get_image_from_s3(diagnosis_id: str) -> bytes:
+def get_image_from_s3(diagnosis_id: str) -> tuple[bytes, str | None]:
     """
-    S3에서 이미지를 가져옵니다.
+    S3에서 이미지를 가져오고, 메타데이터(bodyPart)를 함께 반환합니다.
     
     Args:
         diagnosis_id: 진단 ID (이미지 파일명)
         
     Returns:
-        bytes: 이미지 데이터
+        (이미지 데이터, body_part)
     """
     try:
         response = s3_client.get_object(
             Bucket=S3_BUCKET_NAME,
-            Key=f"{diagnosis_id}"  # S3에 저장된 파일 이름이 diagnosis_id
+            Key=f"{diagnosis_id}"
         )
         image_data = response['Body'].read()
-        return image_data
+        metadata = response.get('Metadata', {})
+        body_part = metadata.get('bodypart') or metadata.get('bodyPart')
+        return image_data, body_part
     except Exception as e:
         print(f"S3에서 이미지를 가져오는 중 오류 발생: {e}")
-        return None 
+        return None, None
