@@ -3,9 +3,9 @@ from fastapi import APIRouter, HTTPException
 from src.app.diagnosis.schemas.other_symptom import OtherSymptomInput, OtherSymptomResult
 from src.app.diagnosis.services.other_symptom import process_other_symptom
 
-router = APIRouter(prefix="/other-symptom", tags=["Other Symptom"])
+router = APIRouter(prefix="/api/v1/diagnosis", tags=["Other Symptom"])
 
-@router.post("/", response_model=OtherSymptomResult)
+@router.post("/other-symptom", response_model=OtherSymptomResult)
 async def input_other_symptom(data: OtherSymptomInput) -> OtherSymptomResult:
     """
     진단 ID를 입력받고 기타 증상 string을 처리합니다.
