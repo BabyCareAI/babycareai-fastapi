@@ -22,7 +22,7 @@ class DermaValidatorService:
             dict: 검증 결과 (피부 관련 이미지 여부)
         """
         # S3에서 이미지 가져오기
-        image_data = get_image_from_s3(diagnosis_id)
+        image_data, _ = get_image_from_s3(diagnosis_id)
         if not image_data:
             raise Exception(f"이미지를 찾을 수 없습니다. 진단 ID: {diagnosis_id}")
         
@@ -44,16 +44,6 @@ class DermaValidatorService:
         If the image is not related to skin, output only 'NO'.
         Do not provide any explanation.
         """
-        # (한국어 버전)
-        # """
-        # 당신은 의료 이미지 분석 전문가입니다.
-        # 사용자가 제공한 이미지가 피부(skin) 관련 이미지인지 판단해야 합니다.
-        # 피부 관련 이미지란 피부 질환, 피부 상태, 피부의 일부분을 보여주는 이미지를 의미합니다.
-        #
-        # 분석 결과로 이미지가 피부 관련 이미지인 경우 'YES'만 출력하고,
-        # 피부 관련 이미지가 아닌 경우 'NO'만 출력하세요.
-        # 판단 이유는 작성하지 마세요.
-        # """
         
         user_prompt = "Please determine whether this image is related to skin conditions."
         # "이 이미지가 피부 관련 이미지인지 판단해주세요."

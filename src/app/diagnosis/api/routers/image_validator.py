@@ -13,14 +13,11 @@ async def validate_skin_image(input_data: DiagnosisIdInput):
     
     Args:
         input_data: 진단 ID (UUID)
-        
     Returns:
         ValidationResult: 검증 결과 (피부 관련 이미지 여부)
     """
     try:
         result = await derma_validator_service.validate_skin_image(input_data.diagnosis_id)
-        return ValidationResult(
-            is_skin_related=result["is_skin_related"]
-        )
+        return ValidationResult(is_skin_related=result["is_skin_related"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"이미지 검증 중 오류가 발생했습니다: {str(e)}")
