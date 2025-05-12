@@ -1,7 +1,7 @@
 # 이미지 검증 api
 from fastapi import APIRouter, HTTPException
-from src.app.diagnosis.schemas.image_validator import DiagnosisIdInput, ValidationResult
-from src.app.diagnosis.services.image_validator import derma_validator_service
+from src.app.domain.diagnosis.schemas.image_validator import DiagnosisIdInput, ValidationResult
+from src.app.domain.diagnosis.services.image_validator import derma_validator_service
 
 router = APIRouter(prefix="/api/v1/diagnosis", tags=["Validation"])
 

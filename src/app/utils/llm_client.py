@@ -1,7 +1,39 @@
 # LLM 클라이언트 유틸리티
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema.messages import HumanMessage, SystemMessage
+from langchain_openai import OpenAIEmbeddings
 import base64
+import asyncio
+
+# OpenAI 텍스트 임베딩 모델 (text-embedding-3-large)
+_embeddings_model = None
+
+# OpenAIEmbeddings는 비동기 지원이므로 직접 await 가능
+
+def get_embeddings_model() -> OpenAIEmbeddings:
+    global _embeddings_model
+    if _embeddings_model is None:
+        _embeddings_model = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+    return _embeddings_model
+
+async def get_text_embedding(text: str) -> list:
+    """
+    텍스트를 임베딩 벡터로 변환합니다.
+    """
+    model = get_embeddings_model()
+    # OpenAIEmbeddings.embed_query는 sync이므로 run_in_executor 사용
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, model.embed_query, text)
+
+async def query_llm_with_context(user_prompt: str, model_name: str = "gemini-2.0-flash-lite", temperature: float = 0, max_output_tokens: int = 500) -> str:
+    """
+    LLM에 프롬프트를 입력하여 응답을 반환합니다.
+    """
+    model = create_llm_model(model_name, temperature, max_output_tokens)
+    messages = [HumanMessage(content=user_prompt)]
+    loop = asyncio.get_event_loop()
+    # ChatGoogleGenerativeAI는 sync이므로 run_in_executor
+    return await loop.run_in_executor(None, lambda: model(messages).content)
 
 def create_llm_model(model_name: str = "gemini-2.0-flash-lite", temperature: float = 0, max_output_tokens: int = 500):
     """

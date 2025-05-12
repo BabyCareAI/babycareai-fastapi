@@ -1,5 +1,5 @@
 # 기타 증상 입력 api
-from src.app.diagnosis.schemas.other_symptom import OtherSymptomInput, OtherSymptomResult
+from src.app.domain.diagnosis.schemas.other_symptom import OtherSymptomInput, OtherSymptomResult
 from src.app.utils.llm_client import create_llm_model
 from langchain.schema.messages import HumanMessage, SystemMessage
 from src.app.utils.redis_client import save_to_redis
