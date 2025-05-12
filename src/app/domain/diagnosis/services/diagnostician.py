@@ -29,7 +29,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
 
         input_text = flatten_and_join(values)
         input_text = str(input_text)
-        print("[입력 데이터]", flush=True)
+        print("---[입력 데이터]---", flush=True)
         print(input_text, flush=True)
 
         if not input_text:
@@ -54,9 +54,6 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
         
         # 3. retriever를 통한 유사 질병 Top-K 검색 (텍스트 기반)
         similar_diseases = retrieve_similar_diseases(input_text, top_k=top_k)
-        print("[유사 질병 검색 결과]", flush=True)
-        for i, d in enumerate(similar_diseases, 1):
-            print(f"#{i}: {d}", flush=True)
         if not similar_diseases:
             return DiagnosisResponse(
                 diagnosis="유사 질병을 찾을 수 없습니다.",
