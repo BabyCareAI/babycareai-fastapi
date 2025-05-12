@@ -6,7 +6,7 @@ from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisIdInput, Dia
 from src.app.domain.diagnosis.services.diagnostician import diagnose_with_rag
 from src.app.domain.diagnosis.services.diagnostician import save_diagnosis_result
 from src.app.utils.redis_client import get_from_redis
-import json
+from src.app.domain.diagnosis.utils.data_processor import convert_to_json_string
 
 router = APIRouter(prefix="/api/v1/diagnosis", tags=["diagnosis"])
 
@@ -28,12 +28,6 @@ async def diagnose_rag(
     symptoms = get_from_redis(f"symptoms:{diagnosis_id}")
     other_symptom = get_from_redis(f"other_symptom:{diagnosis_id}")
     classification = get_from_redis(f"classification:{diagnosis_id}")
-
-    # 딕셔너리나 리스트 형태의 데이터를 JSON 문자열로 변환
-    def convert_to_json_string(data):
-        if isinstance(data, (dict, list)):
-            return json.dumps(data, ensure_ascii=False)
-        return data
 
     # 진단 결과 저장
     await save_diagnosis_result(

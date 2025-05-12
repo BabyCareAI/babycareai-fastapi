@@ -4,8 +4,8 @@ from src.app.utils.llm_client import get_text_embedding, query_llm_with_context
 from src.app.utils.pinecone_client import retrieve_similar_diseases
 from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisResultsCreate
 from src.app.domain.diagnosis.crud.diagnostician import create_diagnosis_result
+from src.app.domain.diagnosis.utils.data_processor import flatten_and_join
 from sqlalchemy.ext.asyncio import AsyncSession
-import json
 import logging
 
 async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: AsyncSession = None) -> DiagnosisResponse:
@@ -26,22 +26,6 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
             f"classification:{diagnosis_id}"
         ]
         values = [get_from_redis(key) for key in redis_keys]
-
-        # 값이 None이 아닌 것만 추출, dict/list면 json 문자열로 변환, str만 retriever에 전달
-        def flatten_and_join(values):
-            parts = []
-            for v in values:
-                if isinstance(v, dict):
-                    for val in v.values():
-                        if isinstance(val, (dict, list)):
-                            parts.append(json.dumps(val, ensure_ascii=False))
-                        else:
-                            parts.append(str(val))
-                elif isinstance(v, list):
-                    parts.append(json.dumps(v, ensure_ascii=False))
-                else:
-                    parts.append(str(v))
-            return " ".join(parts)
 
         input_text = flatten_and_join(values)
         input_text = str(input_text)
@@ -119,15 +103,15 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
         
         # 5. 결과 조합 및 반환
         top_k_diseases = [
-    DiseaseInfo(
-        disease=d.get('metadata', {}).get('disease', ''),
-        symptoms=d.get('metadata', {}).get('symptoms', []),
-        skin_site=d.get('metadata', {}).get('skin_site', []),
-        disease_information=d.get('content', ''),
-        similarity=d.get('score', None),
-    )
-    for d in similar_diseases
-]
+            DiseaseInfo(
+                disease=d.get('metadata', {}).get('disease', ''),
+                symptoms=d.get('metadata', {}).get('symptoms', []),
+                skin_site=d.get('metadata', {}).get('skin_site', []),
+                disease_information=d.get('content', ''),
+                similarity=d.get('score', None),
+            )
+            for d in similar_diseases
+        ]
         return DiagnosisResponse(
             diagnosis=diagnosis,
             top_k_diseases=top_k_diseases,
