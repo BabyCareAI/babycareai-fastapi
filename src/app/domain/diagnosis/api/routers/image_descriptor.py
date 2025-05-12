@@ -1,7 +1,7 @@
 # 이미지 상태 설명 API
 from fastapi import APIRouter, HTTPException
-from src.app.diagnosis.schemas.image_descriptor import DiagnosisIdInput, ImageDescriptionResult
-from src.app.diagnosis.services.image_descriptor import image_descriptor_service
+from src.app.domain.diagnosis.schemas.image_descriptor import DiagnosisIdInput, ImageDescriptionResult
+from src.app.domain.diagnosis.services.image_descriptor import image_descriptor_service
 
 router = APIRouter(prefix="/api/v1/diagnosis", tags=["Image Description"])
 

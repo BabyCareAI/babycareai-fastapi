@@ -1,13 +1,14 @@
 # 진단(RAG) 서비스
-from typing import List, Tuple
-from src.app.diagnosis.schemas.diagnostician import DiagnosisIdInput, DiagnosisResponse, DiseaseInfo
+from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisIdInput, DiagnosisResponse, DiseaseInfo
 from src.app.utils.llm_client import get_text_embedding, query_llm_with_context
 from src.app.utils.pinecone_client import retrieve_similar_diseases
-
+from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisResultsCreate
+from src.app.domain.diagnosis.crud.diagnostician import create_diagnosis_result
+from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import logging
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: AsyncSession = None) -> DiagnosisResponse:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
     1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
@@ -21,7 +22,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5) -> Diagno
         redis_keys = [
             f"image_description:{diagnosis_id}",
             f"symptoms:{diagnosis_id}",
-            f"other_symptom:{diagnosis_id}"
+            f"other_symptom:{diagnosis_id}",
             f"classification:{diagnosis_id}"
         ]
         values = [get_from_redis(key) for key in redis_keys]
@@ -141,3 +142,22 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5) -> Diagno
             input_embedding=None,
             retrieved_embeddings=None
         )
+
+async def save_diagnosis_result(
+    db: AsyncSession,
+    diagnosis_id: str,
+    image_description: str | None,
+    symptoms: str | None,
+    other_symptom: str | None,
+    classification: str | None,
+    diagnosis: str
+):
+    data = DiagnosisResultsCreate(
+        id=diagnosis_id,
+        image_description=image_description,
+        symptoms=symptoms,
+        other_symptom=other_symptom,
+        classification=classification,
+        diagnosis=diagnosis
+    )
+    return await create_diagnosis_result(db, data)

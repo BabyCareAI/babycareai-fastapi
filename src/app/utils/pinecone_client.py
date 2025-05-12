@@ -18,7 +18,6 @@ PINECONE_ENV = os.getenv("PINECONE_ENV")
 # OpenAI 임베딩 모델 (동일하게 사용)
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
 
-print("[Pinecone] API_KEY:", PINECONE_API_KEY)
 print("[Pinecone] INDEX_NAME:", PINECONE_INDEX_NAME)
 print("[Pinecone] ENV:", PINECONE_ENV)
 print("[Pinecone] Embedding model:", getattr(embeddings, 'model', None))

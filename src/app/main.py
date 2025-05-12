@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
-from src.app.diagnosis.api.routers.image_validator import router as image_validation
-from src.app.diagnosis.api.routers.image_descriptor import router as image_description
-from src.app.diagnosis.api.routers.other_symptom import router as other_symptom
-from src.app.diagnosis.api.routers.diagnostician import router as diagnostician
+from src.app.domain.diagnosis.api.routers.image_validator import router as image_validation
+from src.app.domain.diagnosis.api.routers.image_descriptor import router as image_description
+from src.app.domain.diagnosis.api.routers.other_symptom import router as other_symptom
+from src.app.domain.diagnosis.api.routers.diagnostician import router as diagnostician
+from src.app.domain.diagnosis.api.routers import question
 from dotenv import load_dotenv
 import os
 
@@ -28,3 +29,4 @@ app.include_router(image_validation)
 app.include_router(image_description)
 app.include_router(other_symptom)
 app.include_router(diagnostician)
+app.include_router(question.router)

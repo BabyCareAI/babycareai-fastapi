@@ -1,7 +1,7 @@
 # 기타 증상 입력 api
-from fastapi import APIRouter, HTTPException
-from src.app.diagnosis.schemas.other_symptom import OtherSymptomInput, OtherSymptomResult
-from src.app.diagnosis.services.other_symptom import process_other_symptom
+from fastapi import APIRouter
+from src.app.domain.diagnosis.schemas.other_symptom import OtherSymptomInput, OtherSymptomResult
+from src.app.domain.diagnosis.services.other_symptom import process_other_symptom
 
 router = APIRouter(prefix="/other-symptom", tags=["Other Symptom"])
 
