@@ -11,4 +11,4 @@ class ImageDescriptionResult(BaseModel):
     body_part: str | None = Field(None, alias="bodyPart", description="이미지의 신체 부위 정보 (S3 메타데이터)")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
