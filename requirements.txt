@@ -60,3 +60,7 @@ packaging==24.1
 
 prometheus-fastapi-instrumentator==7.1.0
 
+# Test dependencies
+pytest==8.0.2
+pytest-asyncio==0.23.5
+
