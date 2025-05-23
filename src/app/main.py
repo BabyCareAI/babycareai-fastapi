@@ -4,6 +4,7 @@ from src.app.domain.diagnosis.api.routers.image_validator import router as image
 from src.app.domain.diagnosis.api.routers.image_descriptor import router as image_description
 from src.app.domain.diagnosis.api.routers.other_symptom import router as other_symptom
 from src.app.domain.diagnosis.api.routers.diagnostician import router as diagnostician
+from prometheus_fastapi_instrumentator import Instrumentator
 from dotenv import load_dotenv
 import os
 
@@ -28,3 +29,6 @@ app.include_router(image_validation)
 app.include_router(image_description)
 app.include_router(other_symptom)
 app.include_router(diagnostician)
+
+# Prometheus 메트릭 수집기 설정
+Instrumentator().instrument(app).expose(app)
