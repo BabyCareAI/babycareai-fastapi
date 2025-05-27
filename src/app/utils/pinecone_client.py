@@ -35,7 +35,7 @@ vectorstore = PineconeVectorStore(
 disease_retriever = vectorstore.as_retriever()
 
 # retriever를 통해 유사 질병 검색 (sync)
-def retrieve_similar_diseases(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+def retrieve_similar_diseases(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
     """
     입력 텍스트(query)에 대해 top-k 유사 질병 정보를 반환합니다.
     """
