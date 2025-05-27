@@ -50,12 +50,12 @@ def retrieve_similar_diseases(query: str, top_k: int = 5) -> List[Dict[str, Any]
 
     # 검색
     docs = disease_retriever.invoke(query)
-    print("\n---[retriever 검색 결과]---", flush=True)
+    # print("\n---[retriever 검색 결과]---", flush=True)
     for i, doc in enumerate(docs, 1):
         sim = doc.metadata.get('similarity', 'N/A')
-        print(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}", flush=True)
-        print(f"[{i}] doc.metadata:", doc.metadata, flush=True)
-        print(f"[{i}] doc.page_content[:100]:", doc.page_content[:100], flush=True)
+        # print(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}", flush=True)
+        # print(f"[{i}] doc.metadata:", doc.metadata, flush=True)
+        # print(f"[{i}] doc.page_content[:100]:", doc.page_content[:100], flush=True)
     return [
         {"metadata": doc.metadata, "content": doc.page_content} for doc in docs
     ]
