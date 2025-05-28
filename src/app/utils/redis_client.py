@@ -7,6 +7,8 @@ import numpy as np
 import asyncio
 from typing import List, Dict, Any
 
+from sqlalchemy.testing.plugin.plugin_base import logging
+
 load_dotenv()
 
 # Redis 클라이언트 초기화
@@ -26,7 +28,7 @@ def save_to_redis(key: str, value: dict, expire_seconds: int = 86400):
         # 만료 시간 설정
         redis_client.expire(key, expire_seconds)
     except Exception as e:
-        print(f"Redis에 저장하는 중 오류 발생: {e}")
+        logging.error(f"Redis에 저장하는 중 오류 발생: {e}", flush=True)
 
 def get_from_redis(key: str) -> dict:
     """
@@ -38,7 +40,7 @@ def get_from_redis(key: str) -> dict:
             return json.loads(data)
         return None
     except Exception as e:
-        print(f"Redis에서 데이터를 가져오는 중 오류 발생: {e}")
+        logging.error(f"Redis에서 데이터를 가져오는 중 오류 발생: {e}", flush=True)
         return None
 
 # --- 벡터스토어 관련 함수 ---

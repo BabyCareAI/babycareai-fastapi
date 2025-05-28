@@ -29,10 +29,10 @@ async def get_text_embedding(text: str) -> list:
 
 async def query_llm_with_context(
     user_prompt: str, 
-    model_name: str = "gpt-4o-mini",
+    model_name: str = "gemini-2.0-flash-lite", # gpt-4o-mini
     temperature: float = 0.5, 
     max_output_tokens: int = 500,
-    provider: str = "openai"
+    provider: str = "google" # openai
 ) -> str:
     """
     LLM에 프롬프트를 입력하여 응답을 반환합니다.
@@ -53,8 +53,9 @@ async def query_llm_with_context(
     
     if provider == "openai":
         return await loop.run_in_executor(None, lambda: model(messages).content)
-    else:  # OpenAI
-        return await model.ainvoke(messages).content
+    else:
+        response = await model.ainvoke(messages)
+        return response.content
 
 def create_llm_model(
     model_name: str = "gemini-2.0-flash-lite", 
