@@ -7,6 +7,7 @@ SQLAlchemy==2.0.35
 alembic==1.15.2
 aiomysql==0.2.0
 PyMySQL==1.1.1
+cryptography==42.0.3
 
 redis==5.2.0
 aioredis==2.0.1
