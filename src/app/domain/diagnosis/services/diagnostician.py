@@ -29,8 +29,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
 
         input_text = flatten_and_join(values)
         input_text = str(input_text)
-        # print("---[입력 데이터]---", flush=True)
-        # print(input_text, flush=True)
+        logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:100]}...")  # 로그에 일부만 출력
 
         if not input_text:
             logging.error(f"diagnosis_id={diagnosis_id}에 해당하는 입력 데이터가 없습니다.")
