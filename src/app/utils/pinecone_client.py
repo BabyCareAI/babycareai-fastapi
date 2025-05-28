@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from sqlalchemy.testing.plugin.plugin_base import logging
+import logging
 
 load_dotenv()
 
@@ -47,15 +47,16 @@ def retrieve_similar_diseases(query: str, top_k: int = 10) -> List[Dict[str, Any
     try:
         input_embedding = embeddings.embed_query(query)
     except Exception as e:
-        logging.error(f"[pinecone_client] 임베딩 생성 오류: {str(e)}", flush=True)
+        logging.error(f"[pinecone_client] 임베딩 생성 오류: {str(e)}")
 
     # 검색
-    docs = disease_retriever.invoke(query)
+    docs = vectorstore.similarity_search(query, k=top_k)
+    logging.info(f"[pinecone_client] 검색된 문서 수: {len(docs)}")
     for i, doc in enumerate(docs, 1):
         sim = doc.metadata.get('similarity', 'N/A')
-        logging.info(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}", flush=True)
-        logging.info(f"[{i}] doc.metadata: {doc.metadata}", flush=True)
-        logging.info(f"[{i}] doc.page_content[:100]: {doc.page_content[:100]}", flush=True)
+        logging.info(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}")
+        logging.info(f"[{i}] doc.metadata: {doc.metadata}")
+        logging.info(f"[{i}] doc.page_content[:100]: {doc.page_content[:100]}")
     return [
         {"metadata": doc.metadata, "content": doc.page_content} for doc in docs
     ]

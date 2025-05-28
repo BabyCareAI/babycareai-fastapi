@@ -37,5 +37,5 @@ def get_image_from_s3(diagnosis_id: str) -> tuple[bytes, str | None]:
         body_part = metadata.get('bodypart') or metadata.get('bodyPart')
         return image_data, body_part
     except Exception as e:
-        logging.error(f"S3에서 이미지를 가져오는 중 오류 발생: {e}", flush=True)
+        logging.error(f"S3에서 이미지를 가져오는 중 오류 발생: {e}")
         return None, None
