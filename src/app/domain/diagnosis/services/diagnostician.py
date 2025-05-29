@@ -8,7 +8,7 @@ from src.app.domain.diagnosis.utils.data_processor import flatten_and_join
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: AsyncSession = None) -> DiagnosisResponse:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
     1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
@@ -29,7 +29,6 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: Asyn
 
         input_text = flatten_and_join(values)
         input_text = str(input_text)
-        logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:100]}...")  # 로그에 일부만 출력
 
         if not input_text:
             logging.error(f"diagnosis_id={diagnosis_id}에 해당하는 입력 데이터가 없습니다.")
@@ -39,7 +38,8 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: Asyn
                 input_embedding=None,
                 retrieved_embeddings=None
             )
-        
+        logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:500]}... (총 {len(input_text)}자)")
+
         # 2. 입력 임베딩 생성 (OpenAIEmbeddings 사용)
         input_embedding = await get_text_embedding(input_text)
         if input_embedding is None:
