@@ -7,6 +7,7 @@ SQLAlchemy==2.0.35
 alembic==1.15.2
 aiomysql==0.2.0
 PyMySQL==1.1.1
+cryptography==42.0.3
 
 redis==5.2.0
 aioredis==2.0.1
@@ -61,6 +62,7 @@ packaging==24.1
 prometheus-fastapi-instrumentator==7.1.0
 
 # Test dependencies
-pytest==8.0.2
-pytest-asyncio==0.23.5
+pytest==7.4.4
+pytest-asyncio==0.21.2
+
 

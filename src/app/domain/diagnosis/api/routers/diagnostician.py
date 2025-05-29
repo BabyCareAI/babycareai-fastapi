@@ -8,9 +8,9 @@ from src.app.domain.diagnosis.services.diagnostician import save_diagnosis_resul
 from src.app.utils.redis_client import get_from_redis
 from src.app.domain.diagnosis.utils.data_processor import convert_to_json_string
 
-router = APIRouter(prefix="/api/v1/diagnosis", tags=["diagnosis"])
+router = APIRouter(prefix="/api/v1/diagnosis", tags=["진단"])
 
-@router.post("/rag", response_model=DiagnosisResponse, summary="RAG 기반 피부 질환 진단 API")
+@router.post("/rag", response_model=DiagnosisResponse, summary="최종 진단 (RAG)")
 async def diagnose_rag(
     request: DiagnosisIdInput,
     db: AsyncSession = Depends(get_db)

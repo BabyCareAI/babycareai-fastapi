@@ -7,7 +7,9 @@ from src.app.domain.diagnosis.api.routers.diagnostician import router as diagnos
 from prometheus_fastapi_instrumentator import Instrumentator
 from dotenv import load_dotenv
 import os
+import logging
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 load_dotenv()
 
