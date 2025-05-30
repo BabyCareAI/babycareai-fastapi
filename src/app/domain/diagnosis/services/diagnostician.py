@@ -8,7 +8,7 @@ from src.app.domain.diagnosis.utils.data_processor import flatten_and_join, extr
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
     1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
@@ -69,39 +69,44 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: Asyn
                 retrieved_embeddings=None
             )
         
-        # 4. LLM에 컨텍스트와 함께 질의 (Chain-of-Thought & 맞춤형 조언, 한국어)
+        # 4. LLM에 컨텍스트와 함께 질의 (Chain-of-Thought)
         context = "\n\n".join([
-            f"[{i+1}] 질병명: {d.get('metadata', {}).get('disease', '')}\n"
-            f"증상: {', '.join(d.get('metadata', {}).get('symptoms', []))}\n"
-            f"피부 부위: {', '.join(d.get('metadata', {}).get('skin_site', []))}\n"
-            f"설명: {d.get('content', '')}"
+            f"[{i+1}] Disease Name: {d.get('metadata', {}).get('disease', '')}\n"
+            f"Symptoms: {', '.join(d.get('metadata', {}).get('symptoms', []))}\n"
+            f"Skin Site: {', '.join(d.get('metadata', {}).get('skin_site', []))}\n"
+            f"Skin Description: {d.get('content', '')}"
             for i, d in enumerate(similar_diseases)
         ])
         user_prompt = f"""
-아래는 영유아 피부 질환에 대한 데이터입니다. 문서는 관련성 순서로 정렬되어 있으며, 첫 번째와 마지막 문서가 가장 관련성이 높습니다.
+Below is data about infant skin diseases. The documents are sorted by relevance, with the first and last documents being the most relevant.
 
 {context}
 
 ---
 
-[사용자 입력]
+[User Input]
 {input_text}
 
 ---
 
-위의 데이터와 사용자 입력을 바탕으로 다음 지침을 따라주세요:
-1. 첫 번째와 마지막 문서를 우선적으로 참고하여, 유사 질병 정보와 입력을 논리적으로 단계별(Chain-of-Thought)로 분석하여, 가장 가능성 높은 피부 질환을 도출하세요.
-2. 진단 이유와 근거를 명확하게 서술하세요.
-3. 진단 결과와 함께 보호자(부모)를 위한 맞춤형 조언(생활관리, 주의사항, 병원 방문 필요 여부 등)을 제시하세요.
-4. 모든 답변은 반드시 한국어로 작성하세요.
+Based on the above data and user input, please follow these guidelines:
+1. Primarily reference the first and last documents, analyze the similar disease information and input logically step-by-step (Chain-of-Thought) to derive the most likely skin condition.
+2. Clearly state the diagnosis reason and evidence.
+3. Provide the response in Korean, using a warm and friendly tone that will reassure worried parents.
 
-[출력 예시]
-1. 최종 진단: ...
-2. 진단 이유: ... (step-by-step reasoning)
-3. 맞춤형 조언: ...
+Please structure your response in the following format:
+- 최종 진단 (Final Diagnosis): 진단명
+- 진단 이유 (Diagnosis Reason): 이미지나 증상을 통해 해당 진단에 도달한 이유
+- 중증도 (Severity): 중등도를 판단하며, 간단한 설명 포함
+- 병원 내원 필요 여부 (Need for Hospital Visit): 즉시 방문 필요 여부를 명확하게 안내
+- 가정 내 처치 방법 (Home Care Instructions): 부모님이 쉽게 실천할 수 있는 구체적이고 실용적인 조언
 
----
-답변:
+Guidelines for the response:
+1. Maintain accurate medical terms but add simple explanations in parentheses when needed
+2. Use warm and empathetic expressions that can reassure worried parents
+3. Write in formal Korean (존댓말)
+4. Choose vocabulary that reduces anxiety and builds trust
+5. Avoid directly referencing document numbers (e.g., "문서 1과 4"). Instead, refer to the source naturally (e.g., "참고 자료에 따르면", "의료 정보를 바탕으로", "관련 자료에서는" 등)
 """
         diagnosis = await query_llm_with_context(user_prompt)
         
