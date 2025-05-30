@@ -4,7 +4,7 @@ from src.app.utils.llm_client import get_text_embedding, query_llm_with_context
 from src.app.utils.pinecone_client import retrieve_similar_diseases
 from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisResultsCreate
 from src.app.domain.diagnosis.crud.diagnostician import create_diagnosis_result
-from src.app.domain.diagnosis.utils.data_processor import flatten_and_join
+from src.app.domain.diagnosis.utils.data_processor import flatten_and_join, extract_top_classification
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
@@ -27,6 +27,14 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
         ]
         values = [get_from_redis(key) for key in redis_keys]
 
+        # classification에서 가장 높은 확률의 클래스 추출
+        classification_data = values[3]  # classification 데이터
+        top_classification = extract_top_classification(classification_data)
+        
+        # classification 데이터를 추출된 클래스로 대체
+        values[3] = top_classification
+        # logging.info(values[3])
+
         input_text = flatten_and_join(values)
         input_text = str(input_text)
 
@@ -38,7 +46,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 5, db: Async
                 input_embedding=None,
                 retrieved_embeddings=None
             )
-        logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:500]}... (총 {len(input_text)}자)")
+        # logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:1000]}... (총 {len(input_text)}자)")
 
         # 2. 입력 임베딩 생성 (OpenAIEmbeddings 사용)
         input_embedding = await get_text_embedding(input_text)

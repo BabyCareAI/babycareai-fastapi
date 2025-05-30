@@ -1,6 +1,7 @@
 # 진단 데이터 처리 유틸리티
 import json
 from typing import List, Any
+import logging
 
 def flatten_and_join(values: List[Any]) -> str:
     """
@@ -38,4 +39,39 @@ def convert_to_json_string(data: Any) -> str:
     """
     if isinstance(data, (dict, list)):
         return json.dumps(data, ensure_ascii=False)
-    return str(data) 
+    return str(data)
+
+def extract_top_classification(classification_data: Any) -> str:
+    """
+    classification 데이터에서 첫 번째 클래스와 확률값을 추출합니다.
+    
+    Args:
+        classification_data: classification 데이터 (문자열 또는 딕셔너리)
+        
+    Returns:
+        str: "[Computer Vision-based Skin Disease Diagnosis System analysis result]:" 형식의 문자열
+    """
+    try:
+        if not classification_data:
+            logging.warning("classification_data가 비어있습니다.")
+            return ""
+            
+        # 딕셔너리인 경우
+        if isinstance(classification_data, dict):
+            if 'result' in classification_data and classification_data['result']:
+                first_result = classification_data['result'][0]
+                if 'class' in first_result and 'probability' in first_result:
+                    class_name = first_result['class']
+                    probability = first_result['probability']
+                    # 확률값을 퍼센트로 변환하고 소수점 1자리까지 표시
+                    probability_percent = round(probability * 100, 1)
+                    result = f"**[Computer Vision-based Skin Disease Diagnosis System analysis result]:** {probability_percent}% probability of {class_name}."
+                    return result
+            logging.warning("딕셔너리에서 클래스를 찾을 수 없습니다.")
+            return ""
+            
+        logging.warning(f"지원하지 않는 데이터 타입입니다: {type(classification_data)}")
+        return ""
+    except Exception as e:
+        logging.error(f"클래스 추출 중 오류 발생: {str(e)}")
+        return "" 

@@ -48,12 +48,12 @@ def retrieve_similar_diseases(query: str, top_k: int = 5) -> List[Dict[str, Any]
 
     # 5. 검색
     docs = vectorstore.similarity_search(query, k=top_k)
-    logging.info(f"[pinecone_client][체크리스트] 검색된 문서 수: {len(docs)}")
+    # logging.info(f"[pinecone_client][체크리스트] 검색된 문서 수: {len(docs)}")
     for i, doc in enumerate(docs, 1):
         sim = doc.metadata.get('similarity', 'N/A')
-        logging.info(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}")
-        logging.info(f"[{i}] doc.metadata: {doc.metadata}")
-        logging.info(f"[{i}] doc.page_content[:100]: {doc.page_content[:100]}")
+        # logging.info(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}")
+        # logging.info(f"[{i}] doc.metadata: {doc.metadata}")
+        # logging.info(f"[{i}] doc.page_content[:100]: {doc.page_content[:100]}")
     return [
         {"metadata": doc.metadata, "content": doc.page_content} for doc in docs
     ]
