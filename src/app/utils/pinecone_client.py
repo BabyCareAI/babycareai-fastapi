@@ -9,7 +9,9 @@ from typing import List, Dict, Any
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
+from langchain_community.document_transformers import LongContextReorder
 import logging
+import numpy as np
 
 load_dotenv()
 
@@ -33,28 +35,27 @@ vectorstore = PineconeVectorStore(
 # as_retriever로 retriever 객체 제공
 disease_retriever = vectorstore.as_retriever()
 
-# retriever를 통해 유사 질병 검색 (sync)
 def retrieve_similar_diseases(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
     """
     입력 텍스트(query)에 대해 top-k 유사 질병 정보를 반환합니다.
+    LongContextReorder를 사용하여 검색 결과를 재정렬합니다.
     """
-
-    # 임베딩 생성
     try:
+        # 임베딩 생성
         input_embedding = embeddings.embed_query(query)
     except Exception as e:
         logging.error(f"[pinecone_client][체크리스트] 임베딩 생성 오류: {str(e)}")
         return []
 
-    # 5. 검색
+    # 검색
     docs = vectorstore.similarity_search(query, k=top_k)
-    # logging.info(f"[pinecone_client][체크리스트] 검색된 문서 수: {len(docs)}")
-    for i, doc in enumerate(docs, 1):
-        sim = doc.metadata.get('similarity', 'N/A')
-        # logging.info(f"[{i}] {doc.metadata.get('disease', 'N/A')}: {sim}")
-        # logging.info(f"[{i}] doc.metadata: {doc.metadata}")
-        # logging.info(f"[{i}] doc.page_content[:100]: {doc.page_content[:100]}")
+    
+    # LongContextReorder 적용
+    reordering = LongContextReorder()
+    reordered_docs = reordering.transform_documents(docs)
+    
     return [
-        {"metadata": doc.metadata, "content": doc.page_content} for doc in docs
+        {"metadata": doc.metadata, "content": doc.page_content} 
+        for doc in reordered_docs
     ]
 

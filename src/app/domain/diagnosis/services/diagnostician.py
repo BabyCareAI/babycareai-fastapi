@@ -71,14 +71,14 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: Asyn
         
         # 4. LLM에 컨텍스트와 함께 질의 (Chain-of-Thought & 맞춤형 조언, 한국어)
         context = "\n\n".join([
-            f"질병명: {d.get('metadata', {}).get('disease', '')}\n"
+            f"[{i+1}] 질병명: {d.get('metadata', {}).get('disease', '')}\n"
             f"증상: {', '.join(d.get('metadata', {}).get('symptoms', []))}\n"
             f"피부 부위: {', '.join(d.get('metadata', {}).get('skin_site', []))}\n"
             f"설명: {d.get('content', '')}"
-            for d in similar_diseases
+            for i, d in enumerate(similar_diseases)
         ])
         user_prompt = f"""
-아래는 영유아 피부 질환에 대한 데이터입니다.
+아래는 영유아 피부 질환에 대한 데이터입니다. 문서는 관련성 순서로 정렬되어 있으며, 첫 번째와 마지막 문서가 가장 관련성이 높습니다.
 
 {context}
 
@@ -90,7 +90,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: Asyn
 ---
 
 위의 데이터와 사용자 입력을 바탕으로 다음 지침을 따라주세요:
-1. 유사 질병 정보와 입력을 논리적으로 단계별(Chain-of-Thought)로 분석하여, 가장 가능성 높은 피부 질환을 도출하세요.
+1. 첫 번째와 마지막 문서를 우선적으로 참고하여, 유사 질병 정보와 입력을 논리적으로 단계별(Chain-of-Thought)로 분석하여, 가장 가능성 높은 피부 질환을 도출하세요.
 2. 진단 이유와 근거를 명확하게 서술하세요.
 3. 진단 결과와 함께 보호자(부모)를 위한 맞춤형 조언(생활관리, 주의사항, 병원 방문 필요 여부 등)을 제시하세요.
 4. 모든 답변은 반드시 한국어로 작성하세요.
