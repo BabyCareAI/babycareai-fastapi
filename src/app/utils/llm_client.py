@@ -31,7 +31,7 @@ async def query_llm_with_context(
     user_prompt: str, 
     model_name: str = "gemini-2.0-flash-lite", # gpt-4o-mini
     temperature: float = 0.5, 
-    max_output_tokens: int = 500,
+    max_output_tokens: int = 1000,
     provider: str = "google" # openai
 ) -> str:
     """
