@@ -29,9 +29,9 @@ async def get_text_embedding(text: str) -> list:
 
 async def query_llm_with_context(
     user_prompt: str, 
-    model_name: str = "gemini-2.0-flash-lite", # gpt-4o-mini
-    temperature: float = 0.5, 
-    max_output_tokens: int = 1000,
+    model_name: str = "gemini-2.5-flash-preview-05-20", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
+    temperature: float = 0,
+    max_output_tokens: int = 300,
     provider: str = "google" # openai
 ) -> str:
     """
@@ -58,10 +58,10 @@ async def query_llm_with_context(
         return response.content
 
 def create_llm_model(
-    model_name: str = "gemini-2.0-flash-lite", 
+    model_name: str = "gemini-2.5-flash-preview-05-20", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
     temperature: float = 0, 
-    max_output_tokens: int = 500,
-    provider: str = "google"
+    max_output_tokens: int = 300,
+    provider: str = "google" # openai
 ) -> LLMModel:
     """
     LLM 모델을 생성 및 초기화합니다.
