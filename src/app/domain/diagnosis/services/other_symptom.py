@@ -41,7 +41,7 @@ async def process_other_symptom(data: OtherSymptomInput) -> OtherSymptomResult:
     redis_key = f"other_symptom:{data.diagnosis_id}"
     save_to_redis(redis_key, {
         "summarized_translation": summarized_translation
-    })
+    }, expire_seconds=172800)  # 48시간 TTL 설정
 
     return OtherSymptomResult(
         diagnosis_id=data.diagnosis_id,

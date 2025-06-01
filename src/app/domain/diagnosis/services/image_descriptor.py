@@ -71,7 +71,7 @@ class ImageDescriptorService:
     def _save_to_redis(self, diagnosis_id: str, description: str, body_part: str | None):
         """이미지 설명 결과 및 부위 정보를 Redis에 저장합니다."""
         redis_key = f"image_description:{diagnosis_id}"
-        save_to_redis(redis_key, {"bodyPart": body_part, "description": description})
+        save_to_redis(redis_key, {"bodyPart": body_part, "description": description}, expire_seconds=172800)  # 48시간 TTL 설정
 
 # 서비스 인스턴스 생성
 image_descriptor_service = ImageDescriptorService()
