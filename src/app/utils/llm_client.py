@@ -29,7 +29,7 @@ async def get_text_embedding(text: str) -> list:
 
 async def query_llm_with_context(
     user_prompt: str, 
-    model_name: str = "gemini-2.0-flash", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
+    model_name: str = "gemini-1.5-flash-8b", # gpt-4o-mini # gemini-2.0-flash
     temperature: float = 0,
     max_output_tokens: int = 300,
     provider: str = "google" # openai
@@ -58,7 +58,7 @@ async def query_llm_with_context(
         return response.content
 
 def create_llm_model(
-    model_name: str = "gemini-2.0-flash", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
+    model_name: str = "gemini-1.5-flash-8b", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
     temperature: float = 0, 
     max_output_tokens: int = 300,
     provider: str = "google" # openai

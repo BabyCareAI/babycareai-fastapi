@@ -8,7 +8,7 @@ from src.app.domain.diagnosis.utils.data_processor import flatten_and_join, extr
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 10, db: AsyncSession = None) -> DiagnosisResponse:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
     1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
@@ -68,7 +68,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
                 input_embedding=input_embedding,
                 retrieved_embeddings=None
             )
-        
+
         # 4. LLM에 컨텍스트와 함께 질의 (Chain-of-Thought)
         context = "\n\n".join([
             f"[{i+1}] Disease Name: {d.get('metadata', {}).get('disease', '')}\n"
