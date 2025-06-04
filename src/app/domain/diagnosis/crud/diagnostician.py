@@ -20,35 +20,30 @@ async def create_diagnosis_result(
 ) -> DiagnosisResults:
     try:
         data_dict = data.dict()
-         # ID 정제
-        data_dict['id'] = clean_uuid(data_dict['id'])
+        # diagnosis_id 정제
+        data_dict['diagnosis_id'] = clean_uuid(data_dict['diagnosis_id'])
         current_time = datetime.utcnow()
-
         
-        # UPSERT 쿼리 실행
+        # INSERT 쿼리 실행 (UPSERT 대신 INSERT만 수행)
         stmt = text("""
             INSERT INTO diagnosis_results 
-            (id, image_description, symptoms, other_symptom, classification, diagnosis, updated_at)
-            VALUES (:id, :image_description, :symptoms, :other_symptom, :classification, :diagnosis, :updated_at)
-            ON DUPLICATE KEY UPDATE
-            image_description = VALUES(image_description),
-            symptoms = VALUES(symptoms),
-            other_symptom = VALUES(other_symptom),
-            classification = VALUES(classification),
-            diagnosis = VALUES(diagnosis),
-            updated_at = VALUES(updated_at)
+            (diagnosis_id, image_description, symptoms, other_symptom, classification, diagnosis, updated_at)
+            VALUES (:diagnosis_id, :image_description, :symptoms, :other_symptom, :classification, :diagnosis, :updated_at)
         """)
         
-        # UPSERT 실행
-        await db.execute(stmt, {**data_dict, 'updated_at': current_time})
+        # INSERT 실행
+        result = await db.execute(stmt, {**data_dict, 'updated_at': current_time})
         
-        # 업데이트된 레코드를 ORM 모델로 조회
-        query = select(DiagnosisResults).where(DiagnosisResults.id == data_dict['id'])
+        # 생성된 레코드의 id 가져오기
+        inserted_id = result.lastrowid
+        
+        # 생성된 레코드를 ORM 모델로 조회
+        query = select(DiagnosisResults).where(DiagnosisResults.id == inserted_id)
         result = await db.execute(query)
         diagnosis_result = result.scalar_one_or_none()
         
         if diagnosis_result is None:
-            logging.error(f"[진단 결과 조회 실패] ID: {data_dict['id']}")
+            logging.error(f"[진단 결과 조회 실패] id: {inserted_id}")
             raise RuntimeError("진단 결과를 저장했지만 조회할 수 없습니다.")
             
         # 모든 작업이 성공적으로 완료된 후 커밋
@@ -57,10 +52,10 @@ async def create_diagnosis_result(
         return diagnosis_result
         
     except SQLAlchemyError as e:
-        logging.error(f"[DB 에러] ID: {data_dict['id']}, 에러: {str(e)}")
+        logging.error(f"[DB 에러] diagnosis_id: {data_dict['diagnosis_id']}, 에러: {str(e)}")
         await db.rollback()
         raise RuntimeError(f"DB error: {e}")
     except Exception as e:
-        logging.error(f"[예상치 못한 에러] ID: {data_dict['id']}, 에러: {str(e)}")
+        logging.error(f"[예상치 못한 에러] diagnosis_id: {data_dict['diagnosis_id']}, 에러: {str(e)}")
         await db.rollback()
         raise RuntimeError(f"Unexpected error: {e}")

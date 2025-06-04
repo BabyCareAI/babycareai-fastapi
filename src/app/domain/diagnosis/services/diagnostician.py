@@ -134,7 +134,7 @@ async def save_diagnosis_result(
     diagnosis: str
 ):
     data = DiagnosisResultsCreate(
-        id=diagnosis_id,
+        diagnosis_id=diagnosis_id,
         image_description=image_description,
         symptoms=symptoms,
         other_symptom=other_symptom,

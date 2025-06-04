@@ -20,7 +20,7 @@ class DiagnosisResponse(BaseModel):
     retrieved_embeddings: Optional[Any] = Field(None, description="(디버그용) 검색된 임베딩")
 
 class DiagnosisResultsCreate(BaseModel):
-    id: str = Field(..., description="진단 ID (UUID)")
+    diagnosis_id: str = Field(..., description="진단 ID (UUID)")
     image_description: Optional[str] = Field(None, description="이미지 설명(재료)")
     symptoms: Optional[str] = Field(None, description="증상 정보(재료)")
     other_symptom: Optional[str] = Field(None, description="기타 증상 정보(재료)")
@@ -28,6 +28,7 @@ class DiagnosisResultsCreate(BaseModel):
     diagnosis: str = Field(..., description="최종 진단 결과")
 
 class DiagnosisResultsRead(DiagnosisResultsCreate):
+    id: int = Field(..., description="자동 증가 ID")
     created_at: datetime
     updated_at: datetime
 

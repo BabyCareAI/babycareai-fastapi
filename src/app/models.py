@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime
+from sqlalchemy import Column, String, Text, DateTime, Integer
 from sqlalchemy.sql import func
 
 from .database import Base
@@ -6,7 +6,8 @@ from .database import Base
 class DiagnosisResults(Base):
     __tablename__ = "diagnosis_results"
 
-    id = Column(String(36), primary_key=True, nullable=False)  # UUID
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    diagnosis_id = Column(String(36), nullable=False)
     image_description = Column(Text, nullable=True)
     symptoms = Column(Text, nullable=True)
     other_symptom = Column(Text, nullable=True)
