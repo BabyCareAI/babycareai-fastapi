@@ -7,6 +7,7 @@ from src.app.domain.diagnosis.crud.diagnostician import create_diagnosis_result
 from src.app.domain.diagnosis.utils.data_processor import flatten_and_join, extract_top_classification
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+import asyncio
 
 async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
     """
@@ -28,39 +29,26 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
         values = [get_from_redis(key) for key in redis_keys]
 
         # classification에서 가장 높은 확률의 클래스 추출
-        classification_data = values[3]  # classification 데이터
+        classification_data = values[3]
         top_classification = extract_top_classification(classification_data)
-        
-        # classification 데이터를 추출된 클래스로 대체
         values[3] = top_classification
-        # logging.info(values[3])
 
         input_text = flatten_and_join(values)
         input_text = str(input_text)
 
-        if not input_text:
-            logging.error(f"diagnosis_id={diagnosis_id}에 해당하는 입력 데이터가 없습니다.")
-            return DiagnosisResponse(
-                diagnosis="입력 데이터 없음",
-                top_k_diseases=[],
-                input_embedding=None,
-                retrieved_embeddings=None
-            )
-        # logging.info(f"diagnosis_id={diagnosis_id}에 대한 입력 데이터: {input_text[:1000]}... (총 {len(input_text)}자)")
-
-        # 2. 입력 임베딩 생성 (OpenAIEmbeddings 사용)
+        # 2. 임베딩 생성
         input_embedding = await get_text_embedding(input_text)
-        if input_embedding is None:
-            logging.error("입력 임베딩 생성 실패")
+        if input_embedding is None or (hasattr(input_embedding, '__len__') and len(input_embedding) == 0):
+            logging.error("임베딩 생성 실패: input_embedding is None or empty")
             return DiagnosisResponse(
-                diagnosis="입력 임베딩 생성 실패",
+                diagnosis="임베딩 생성 실패",
                 top_k_diseases=[],
                 input_embedding=None,
                 retrieved_embeddings=None
             )
-        
-        # 3. retriever를 통한 유사 질병 Top-K 검색 (텍스트 기반)
-        similar_diseases = retrieve_similar_diseases(input_text, top_k=top_k)
+
+        # 3. 유사 질병 검색 (생성된 임베딩 사용)
+        similar_diseases = retrieve_similar_diseases(input_text, top_k=top_k, input_embedding=input_embedding)
         if not similar_diseases:
             return DiagnosisResponse(
                 diagnosis="유사 질병을 찾을 수 없습니다.",
@@ -68,8 +56,8 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
                 input_embedding=input_embedding,
                 retrieved_embeddings=None
             )
-        
-        # 4. LLM에 컨텍스트와 함께 질의 (Chain-of-Thought)
+
+        # 4. LLM에 컨텍스트와 함께 질의
         context = "\n\n".join([
             f"[{i+1}] Disease Name: {d.get('metadata', {}).get('disease', '')}\n"
             f"Symptoms: {', '.join(d.get('metadata', {}).get('symptoms', []))}\n"
