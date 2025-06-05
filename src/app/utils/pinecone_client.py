@@ -5,13 +5,10 @@ Pinecone 벡터스토어 클라이언트 유틸리티
 """
 
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
-from langchain_pinecone import PineconeVectorStore
-from langchain_community.document_transformers import LongContextReorder
+from src.app.utils.llm_client import get_embeddings_model
 import logging
-import numpy as np
 
 load_dotenv()
 
@@ -19,43 +16,49 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 
 # OpenAI 임베딩 모델
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+embeddings = get_embeddings_model()
 
 # Pinecone index 객체 생성
 from pinecone import Pinecone
+
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(PINECONE_INDEX_NAME)
 
-# PineconeVectorStore 생성 (api_key, environment 인자 제거, index 인자 사용)
-vectorstore = PineconeVectorStore(
-    index=index,
-    embedding=embeddings
-)
-
-# as_retriever로 retriever 객체 제공
-disease_retriever = vectorstore.as_retriever()
-
-def retrieve_similar_diseases(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
+def retrieve_similar_diseases(query: str, top_k: int = 2, input_embedding: Optional[List[float]] = None) -> List[Dict[str, Any]]:
     """
     입력 텍스트(query)에 대해 top-k 유사 질병 정보를 반환합니다.
-    LongContextReorder를 사용하여 검색 결과를 재정렬합니다.
+    
+    Args:
+        query: 검색할 텍스트
+        top_k: 반환할 결과 수
+        input_embedding: 외부에서 생성된 임베딩 (선택적)
     """
     try:
-        # 임베딩 생성
-        input_embedding = embeddings.embed_query(query)
+        # 임베딩이 제공되지 않은 경우에만 새로 생성
+        if input_embedding is None:
+            input_embedding = embeddings.embed_query(query)
     except Exception as e:
-        logging.error(f"[pinecone_client][체크리스트] 임베딩 생성 오류: {str(e)}")
+        logging.error(f"[pinecone_client][임베딩 생성 오류]: {e}", exc_info=True)
         return []
 
-    # 검색
-    docs = vectorstore.similarity_search(query, k=top_k)
-    
-    # LongContextReorder 적용
-    reordering = LongContextReorder()
-    reordered_docs = reordering.transform_documents(docs)
-    
-    return [
-        {"metadata": doc.metadata, "content": doc.page_content} 
-        for doc in reordered_docs
-    ]
-
+    try:
+        # Pinecone 직접 쿼리
+        results = index.query(
+            vector=input_embedding,
+            top_k=top_k,
+            include_metadata=True
+        )
+        
+        # 결과 변환
+        similar_diseases = []
+        for match in results.matches:
+            similar_diseases.append({
+                "metadata": match.metadata,
+                "content": match.metadata.get("content", ""),
+                "score": match.score
+            })
+        
+        return similar_diseases
+    except Exception as e:
+        logging.error(f"[pinecone_client][검색 오류]: {e}", exc_info=True)
+        return []

@@ -6,6 +6,11 @@ from langchain_openai import OpenAIEmbeddings
 import base64
 import asyncio
 from typing import Union, Optional
+import logging
+import sys
+import traceback
+
+logging.basicConfig(level=logging.INFO)
 
 # OpenAI 텍스트 임베딩 모델 (text-embedding-3-large)
 _embeddings_model = None
@@ -17,7 +22,11 @@ def get_embeddings_model() -> OpenAIEmbeddings:
     global _embeddings_model
     if _embeddings_model is None:
         _embeddings_model = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+        logging.info("OpenAIEmbeddings: NEW INSTANCE CREATED")
+    else:
+        logging.info("OpenAIEmbeddings: REUSING EXISTING INSTANCE")
     return _embeddings_model
+
 
 async def get_text_embedding(text: str) -> list:
     """
@@ -25,14 +34,21 @@ async def get_text_embedding(text: str) -> list:
     """
     model = get_embeddings_model()
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, model.embed_query, text)
+    try:
+        result = await loop.run_in_executor(None, model.embed_query, text)
+    except Exception as e:
+        logging.error(f"입력 임베딩 생성 실패: {e}", exc_info=True)
+        traceback.print_exc(file=sys.stdout)
+        return None
+    return result
+
 
 async def query_llm_with_context(
-    user_prompt: str, 
-    model_name: str = "gemini-2.5-flash-preview-05-20", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
-    temperature: float = 0,
-    max_output_tokens: int = 300,
-    provider: str = "google" # openai
+        user_prompt: str,
+        model_name: str = "gpt-4o-mini-2024-07-18",  # gpt-4o-mini-2024-07-18 # gemini-2.0-flash
+        temperature: float = 0,
+        max_output_tokens: int = 100,
+        provider: str = "openai"  # openai
 ) -> str:
     """
     LLM에 프롬프트를 입력하여 응답을 반환합니다.
@@ -50,28 +66,29 @@ async def query_llm_with_context(
     model = create_llm_model(model_name, temperature, max_output_tokens, provider)
     messages = [HumanMessage(content=user_prompt)]
     loop = asyncio.get_event_loop()
-    
+
     if provider == "openai":
         return await loop.run_in_executor(None, lambda: model(messages).content)
     else:
         response = await model.ainvoke(messages)
         return response.content
 
+
 def create_llm_model(
-    model_name: str = "gemini-2.5-flash-preview-05-20", # gpt-4o-mini # gemini-2.5-flash-preview-05-20
-    temperature: float = 0, 
-    max_output_tokens: int = 300,
-    provider: str = "google" # openai
+        model_name: str = "gpt-4o-mini-2024-07-18",  # gpt-4o-mini-2024-07-18 # gemini-2.0-flash
+        temperature: float = 0,
+        max_output_tokens: int = 100,
+        provider: str = "openai"  # openai
 ) -> LLMModel:
     """
     LLM 모델을 생성 및 초기화합니다.
-    
+
     Args:
         model_name: 모델 이름
         temperature: 생성 다양성 (0: 결정적, 1: 다양성)
         max_output_tokens: 최대 출력 토큰 수
         provider: LLM 제공자 ("google" 또는 "openai")
-        
+
     Returns:
         LLMModel: LLM 모델 인스턴스
     """
@@ -88,35 +105,37 @@ def create_llm_model(
             max_tokens=max_output_tokens
         )
 
+
 def encode_image_to_base64(image_data: bytes) -> str:
     """
     이미지를 base64로 인코딩합니다.
-    
+
     Args:
         image_data: 이미지 데이터 (bytes)
-        
+
     Returns:
         str: base64로 인코딩된 이미지
     """
     return base64.b64encode(image_data).decode('utf-8')
 
+
 async def process_image_with_llm(
-    model: LLMModel, 
-    base64_image: str, 
-    system_prompt: str, 
-    user_prompt: str,
-    provider: str = "google"
+        model: LLMModel,
+        base64_image: str,
+        system_prompt: str,
+        user_prompt: str,
+        provider: str = "google"
 ) -> str:
     """
     LLM 모델을 사용하여 이미지를 처리합니다.
-    
+
     Args:
         model: LLM 모델
         base64_image: base64로 인코딩된 이미지
         system_prompt: 시스템 프롬프트
         user_prompt: 사용자 프롬프트
         provider: LLM 제공자 ("google" 또는 "openai")
-        
+
     Returns:
         str: LLM 응답
     """
@@ -152,10 +171,10 @@ async def process_image_with_llm(
                 }
             ])
         ]
-    
+
     if provider == "google":
         response = await model.ainvoke(messages)
     else:  # OpenAI
         response = await model.ainvoke(messages)
-    
+
     return response.content.strip() 

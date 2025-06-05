@@ -1,0 +1,81 @@
+config:
+  target: ''
+  http:
+    # Artillery 클라이언트 타임아웃은 일단 넉넉하게 유지 (서버측 에러가 아닌 클라이언트 타임아웃으로 인한 멈춤을 방지)
+    timeout: 90000  # 90초 (LLM/임베딩 응답 지연을 고려하여 늘림)
+
+  phases:
+    # 1단계: 극도로 낮은 부하로 시작 (워밍업 및 기본 안정성 확인)
+    # 2분 동안 20초에 1건 -> 10초에 1건 (0.05 -> 0.1 RPS)으로 매우 천천히 증가
+    - duration: 120
+      arrivalRate: 0.05   # 초당 0.05건 = 20초에 1건
+      rampTo: 0.1         # 초당 0.1건 = 10초에 1건
+      name: "Phase 1: Ultra-Low Load Warm-up (0.05 -> 0.1 RPS)"
+
+    # 2단계: 낮은 부하에서 안정성 확인 (10초에 1건 유지)
+    - duration: 90
+      arrivalRate: 0.1
+      name: "Phase 2: Sustain Ultra-Low Load (0.1 RPS)"
+
+    # 3단계: 부하를 아주 조금씩 증가 (10초에 1건 -> 5초에 1건)
+    - duration: 90
+      arrivalRate: 0.1
+      rampTo: 0.2         # 초당 0.2건 = 5초에 1건
+      name: "Phase 3: Very Gentle Ramp-up (0.1 -> 0.2 RPS)"
+
+    # 4단계: 5초에 1건 부하 유지
+    - duration: 60
+      arrivalRate: 0.2
+      name: "Phase 4: Sustain Very Low Load (0.2 RPS)"
+
+    # 5단계: 부하를 조금 더 증가 (5초에 1건 -> 2초에 1건)
+    - duration: 90
+      arrivalRate: 0.2
+      rampTo: 0.5         # 초당 0.5건 = 2초에 1건
+      name: "Phase 5: Gentle Ramp-up (0.2 -> 0.5 RPS)"
+
+    # 6단계: 2초에 1건 부하 유지
+    # (이전 테스트에서 이 구간까지는 안정적이었음)
+    - duration: 90
+      arrivalRate: 0.5
+      name: "Phase 6: Sustain Moderate Load (0.5 RPS)"
+
+    # 7단계: 부하를 점진적으로 증가 (0.5 -> 0.6 RPS)
+    # 문제 발생 지점 0.5 RPS 이상으로 첫 시도.
+    - duration: 90
+      arrivalRate: 0.5
+      rampTo: 0.6         # 초당 0.6건 (1초에 0.6건 또는 10초에 6건)
+      name: "Phase 7: Incremental Ramp-up (0.5 -> 0.6 RPS)"
+
+    # 8단계: 0.6 RPS 부하 유지
+    # 0.6 RPS에서도 안정적인지 확인합니다. 이 단계에서 에러나 응답 시간 급증 여부를 면밀히 관찰합니다.
+    - duration: 90
+      arrivalRate: 0.6
+      name: "Phase 8: Sustain Low-Moderate Load (0.6 RPS)"
+
+    # 9단계: 부하를 조금 더 증가 (0.6 -> 0.75 RPS)
+    # 이전 테스트에서 500 에러가 시작된 0.75 RPS에 다시 도달합니다.
+    - duration: 90
+      arrivalRate: 0.6
+      rampTo: 0.75        # 초당 0.75건 (4초에 3건)
+      name: "Phase 9: Gentle Ramp-up (0.6 -> 0.75 RPS)"
+
+    # 10단계: 0.75 RPS 부하 유지
+    # 0.75 RPS에서도 안정적인지 확인합니다. 에러 발생 여부를 특히 주의 깊게 관찰합니다.
+    - duration: 90
+      arrivalRate: 0.75
+      name: "Phase 10: Sustain Moderate-Critical Load (0.75 RPS)"
+
+
+  payload:
+    path: "diagnosis_id_6.csv"
+    fields:
+      - "diagnosis_id"
+
+scenarios:
+  - name: "진단 API 테스트"
+    flow:
+      - post:
+          url: '/api/v1/diagnosis/rag'
+          json:
+            diagnosis_id: "{{ diagnosis_id }}"
