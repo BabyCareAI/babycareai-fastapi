@@ -4,7 +4,6 @@ from src.app.domain.diagnosis.api.routers.image_validator import router as image
 from src.app.domain.diagnosis.api.routers.image_descriptor import router as image_description
 from src.app.domain.diagnosis.api.routers.other_symptom import router as other_symptom
 from src.app.domain.diagnosis.api.routers.diagnostician import router as diagnostician
-from src.app.domain.diagnosis.api.routers.hello_world import router as hello_world
 from prometheus_fastapi_instrumentator import Instrumentator
 from dotenv import load_dotenv
 import os
