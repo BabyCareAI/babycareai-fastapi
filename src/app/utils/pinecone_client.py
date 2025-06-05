@@ -24,7 +24,7 @@ from pinecone import Pinecone
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(PINECONE_INDEX_NAME)
 
-def retrieve_similar_diseases(query: str, top_k: int = 4, input_embedding: Optional[List[float]] = None) -> List[Dict[str, Any]]:
+def retrieve_similar_diseases(query: str, top_k: int = 2, input_embedding: Optional[List[float]] = None) -> List[Dict[str, Any]]:
     """
     입력 텍스트(query)에 대해 top-k 유사 질병 정보를 반환합니다.
     

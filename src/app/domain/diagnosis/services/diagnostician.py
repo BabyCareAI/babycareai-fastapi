@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import asyncio
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 2, db: AsyncSession = None) -> DiagnosisResponse:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
     1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
