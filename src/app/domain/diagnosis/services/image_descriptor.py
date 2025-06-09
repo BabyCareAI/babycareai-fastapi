@@ -2,6 +2,9 @@
 from src.app.utils.s3_client import get_image_from_s3
 from src.app.utils.redis_client import save_to_redis
 from src.app.utils.llm_client import create_llm_model, encode_image_to_base64, process_image_with_llm
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 # 이미지 상태 설명 서비스
 class ImageDescriptorService:
@@ -10,6 +13,45 @@ class ImageDescriptorService:
             model_name="gemini-2.0-flash-lite",
             temperature=0,
             max_output_tokens=500
+        )
+        self.chain = self._create_description_chain()
+    
+    def _create_description_chain(self):
+        """
+        이미지 설명을 위한 LCEL 체인을 생성합니다.
+        """
+        description_prompt = ChatPromptTemplate.from_messages([
+            ("system", """
+            You are an AI assistant system that supports the diagnosis of infant skin conditions. 
+            Please objectively and thoroughly describe the skin condition as seen in the image provided by the user.
+
+            Focus on the following elements, and respond clearly and specifically:
+
+            [Skin Condition]: Describe the overall visible condition of the skin (e.g., widespread red spots, localized blisters).
+
+            [Key Characteristics]:
+            - Presence and type of rash: size, number, clarity of borders, and other visually identifiable features
+            - Color changes: differences in color compared to normal skin, including intensity and distribution
+            - Surface features: texture changes such as roughness, scaling, blisters, or ulcers
+            - Distribution pattern: whether symptoms are localized or widespread, symmetrical or asymmetrical, and concentrated in specific areas
+
+            [Objective Observations]: Describe all features that can be confirmed visually from the image without subjective interpretation.
+
+            Please strictly follow these guidelines:
+            1. Do not mention any specific diagnosis. Only describe features that are visually observable.
+            2. Avoid speculative expressions such as "appears to be" or "might be".
+            3. Do not recommend seeing a medical professional or make diagnostic judgments.
+            4. Do not mention or infer information that cannot be seen in the image.
+            5. Do not assess severity or urgency of the symptoms.
+            """),
+            ("human", "Please describe the objective and observable characteristics of this infant skin image.")
+        ])
+
+        return (
+            {"base64_image": RunnablePassthrough()}
+            | description_prompt
+            | self.model
+            | StrOutputParser()
         )
     
     async def describe_skin_image(self, diagnosis_id: str):
@@ -29,44 +71,12 @@ class ImageDescriptorService:
         base64_image = encode_image_to_base64(image_data)
 
         # 이미지 설명 생성
-        description = await self._describe_with_llm(base64_image, body_part)
+        description = await self.chain.ainvoke(base64_image)
 
         # Redis에 결과 저장
         self._save_to_redis(diagnosis_id, description, body_part)
 
         return {"description": description, "bodyPart": body_part}
-
-    async def _describe_with_llm(self, base64_image: str, body_part: str | None) -> str:
-        """LLM을 사용하여 이미지의 피부 상태를 설명합니다."""
-        body_part_info = f"This image shows a body part: {body_part}.\n" if body_part else ""
-        system_prompt = (
-                body_part_info +
-                """
-                You are an AI assistant system that supports the diagnosis of infant skin conditions. 
-                Please objectively and thoroughly describe the skin condition as seen in the image provided by the user.
-    
-                Focus on the following elements, and respond clearly and specifically:
-    
-                [Skin Condition]: Describe the overall visible condition of the skin (e.g., widespread red spots, localized blisters).
-    
-                [Key Characteristics]:
-                - Presence and type of rash: size, number, clarity of borders, and other visually identifiable features
-                - Color changes: differences in color compared to normal skin, including intensity and distribution
-                - Surface features: texture changes such as roughness, scaling, blisters, or ulcers
-                - Distribution pattern: whether symptoms are localized or widespread, symmetrical or asymmetrical, and concentrated in specific areas
-    
-                [Objective Observations]: Describe all features that can be confirmed visually from the image without subjective interpretation.
-    
-                Please strictly follow these guidelines:
-                1. Do not mention any specific diagnosis. Only describe features that are visually observable.
-                2. Avoid speculative expressions such as "appears to be" or "might be".
-                3. Do not recommend seeing a medical professional or make diagnostic judgments.
-                4. Do not mention or infer information that cannot be seen in the image.
-                5. Do not assess severity or urgency of the symptoms.
-                """
-        )
-        user_prompt = "Please describe the objective and observable characteristics of this infant skin image."
-        return await process_image_with_llm(self.model, base64_image, system_prompt, user_prompt)
 
     def _save_to_redis(self, diagnosis_id: str, description: str, body_part: str | None):
         """이미지 설명 결과 및 부위 정보를 Redis에 저장합니다."""

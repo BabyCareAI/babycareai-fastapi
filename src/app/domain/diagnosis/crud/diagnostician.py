@@ -21,6 +21,7 @@ async def create_diagnosis_result(
             other_symptom=data_dict['other_symptom'],
             classification=data_dict['classification'],
             diagnosis=data_dict['diagnosis'],
+            top_k_diseases=data_dict.get('top_k_diseases'),
             updated_at=current_time
         )
         db.add(diagnosis_result)
