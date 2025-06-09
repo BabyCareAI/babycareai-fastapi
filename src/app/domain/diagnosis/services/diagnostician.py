@@ -104,8 +104,24 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
         - Do not reference document numbers. Instead, use natural phrases like "According to medical information...".
         - Use language that reduces anxiety and builds trust.
         """
-        # raw_llm_output = await query_llm_with_context(user_prompt)
+
         diagnosis = await query_llm_with_context(user_prompt)
+        
+        # 한국어 번역을 위한 프롬프트
+        translation_prompt = f"""
+        다음은 AI 진단 결과입니다. 이 결과를 한국어로 번역해주세요.
+        번역 시 다음 사항을 반드시 지켜주세요:
+        1. 원본의 형식("- Final Diagnosis:", "- Diagnosis Reason:" 등)을 그대로 유지해주세요.
+        2. 의학 용어는 정확하게 번역해주세요.
+        3. 친절하고 공감하는 말투로 번역해주세요.
+        4. 불필요한 설명이나 추가 내용은 포함하지 마세요.
+
+        원본 진단 결과:
+        {diagnosis}
+        """
+
+        # 한국어 번역 수행
+        korean_diagnosis = await query_llm_with_context(translation_prompt)
         
         # 5. 결과 조합 및 반환
         top_k_diseases = [
@@ -119,7 +135,7 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
             for d in similar_diseases
         ]
         return DiagnosisResponse(
-            diagnosis=diagnosis,
+            diagnosis=korean_diagnosis,
             top_k_diseases=top_k_diseases
             # input_embedding=input_embedding,
             # retrieved_embeddings=[d.get('embedding') for d in similar_diseases]
