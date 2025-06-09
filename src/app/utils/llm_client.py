@@ -3,72 +3,57 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain.schema.messages import HumanMessage, SystemMessage
 from langchain_openai import OpenAIEmbeddings
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+
 import base64
 import asyncio
-from typing import Union, Optional, Dict, Any
+from typing import Union, Optional
 import logging
-import sys
-import traceback
+from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO)
 
-# OpenAI 텍스트 임베딩 모델 (text-embedding-3-large)
-_embeddings_model = None
-
-# LLM 모델 타입 정의
 LLMModel = Union[ChatGoogleGenerativeAI, ChatOpenAI]
 
+@lru_cache(maxsize=1)
 def get_embeddings_model() -> OpenAIEmbeddings:
     """
-    OpenAI 임베딩 모델을 반환합니다.
-    싱글톤 패턴으로 구현되어 있어 한 번만 초기화됩니다.
+    OpenAI 임베딩 모델을 반환합니다. (lru_cache 사용)
     """
-    global _embeddings_model
-    if _embeddings_model is None:
-        _embeddings_model = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
-        logging.info("OpenAIEmbeddings: NEW INSTANCE CREATED")
-    else:
-        logging.info("OpenAIEmbeddings: REUSING EXISTING INSTANCE")
-    return _embeddings_model
+    return OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
 
-async def get_text_embedding(text: str) -> list:
+async def get_text_embedding(text: str) -> Optional[list]:
     """
     텍스트를 임베딩 벡터로 변환합니다.
-    
     Args:
-        text: 임베딩할 텍스트
-        
+        text (str): 임베딩할 텍스트
     Returns:
-        list: 임베딩 벡터
+        Optional[list]: 임베딩 벡터, 실패 시 None
     """
+    if not text:
+        logging.error("get_text_embedding: 입력 텍스트가 비어 있습니다.")
+        return None
     model = get_embeddings_model()
     loop = asyncio.get_event_loop()
     try:
-        result = await loop.run_in_executor(None, model.embed_query, text)
+        return await loop.run_in_executor(None, model.embed_query, text)
     except Exception as e:
-        logging.error(f"입력 임베딩 생성 실패: {e}", exc_info=True)
-        traceback.print_exc(file=sys.stdout)
+        logging.error(f"입력 임베딩 생성 실패: {e}")
         return None
-    return result
 
 def create_llm_model(
-        model_name: str = "gemini-2.0-flash",
-        temperature: float = 0,
-        max_output_tokens: int = 1000,
-        provider: str = "google"
+    *,
+    model_name: str = "gemini-2.0-flash",
+    temperature: float = 0,
+    max_output_tokens: int = 1000,
+    provider: str = "google"
 ) -> LLMModel:
     """
     LLM 모델을 생성 및 초기화합니다.
-
     Args:
-        model_name: 모델 이름
-        temperature: 생성 다양성 (0: 결정적, 1: 다양성)
-        max_output_tokens: 최대 출력 토큰 수
-        provider: LLM 제공자 ("google" 또는 "openai")
-
+        model_name (str): 모델 이름
+        temperature (float): 생성 다양성
+        max_output_tokens (int): 최대 출력 토큰 수
+        provider (str): LLM 제공자 ("google" 또는 "openai")
     Returns:
         LLMModel: LLM 모델 인스턴스
     """
@@ -78,12 +63,14 @@ def create_llm_model(
             temperature=temperature,
             max_output_tokens=max_output_tokens
         )
-    else:  # OpenAI
+    if provider == "openai":
         return ChatOpenAI(
             model_name=model_name,
             temperature=temperature,
             max_tokens=max_output_tokens
         )
+    logging.error(f"지원하지 않는 provider: {provider}")
+    raise ValueError(f"지원하지 않는 provider: {provider}")
 
 def encode_image_to_base64(image_data: bytes) -> str:
     """
