@@ -10,12 +10,11 @@ class DiseaseInfo(BaseModel):
     disease: str
     symptoms: List[str]
     skin_site: List[str]
-    disease_information: str
+    disease_information: str = Field(..., description="질병 정보")
     similarity: Optional[float] = Field(None, description="입력과의 유사도 점수")
 
 class DiagnosisResponse(BaseModel):
     diagnosis: str = Field(..., description="최종 LLM 진단 결과")
-    top_k_diseases: List[DiseaseInfo] = Field(..., description="유사 질병 Top-K 정보")
     # input_embedding: Optional[Any] = Field(None, description="(디버그용) 입력 임베딩")
     # retrieved_embeddings: Optional[Any] = Field(None, description="(디버그용) 검색된 임베딩")
 
@@ -26,6 +25,7 @@ class DiagnosisResultsCreate(BaseModel):
     other_symptom: Optional[str] = Field(None, description="기타 증상 정보(재료)")
     classification: Optional[str] = Field(None, description="딥러닝 모델 이미지 분류 결과(재료)")
     diagnosis: str = Field(..., description="최종 진단 결과")
+    top_k_diseases: Optional[str] = Field(None, description="유사 질병 Top-K 정보 (JSON 문자열)")
 
 class DiagnosisResultsRead(DiagnosisResultsCreate):
     id: int = Field(..., description="자동 증가 ID")

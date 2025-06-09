@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Text, DateTime, Integer, Index
 from sqlalchemy.sql import func
+from datetime import datetime
 
 from .database import Base
 
@@ -13,5 +14,6 @@ class DiagnosisResults(Base):
     other_symptom = Column(Text, nullable=True)
     classification = Column(Text, nullable=True)
     diagnosis = Column(Text, nullable=False)
+    top_k_diseases = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
