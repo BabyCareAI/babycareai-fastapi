@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "--------------- release/44-v0.4.3 배포 시작(2) -----------------"
+echo "--------------- release/47-v0.4.4 배포 시작(1) -----------------"
 
 cd /home/ubuntu/babycareai-server || {
   echo "디렉토리 이동 실패: /home/ubuntu/babycareai-server"
