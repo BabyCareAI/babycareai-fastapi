@@ -16,8 +16,8 @@ class DiseaseInfo(BaseModel):
 class DiagnosisResponse(BaseModel):
     diagnosis: str = Field(..., description="최종 LLM 진단 결과")
     top_k_diseases: List[DiseaseInfo] = Field(..., description="유사 질병 Top-K 정보")
-    input_embedding: Optional[Any] = Field(None, description="(디버그용) 입력 임베딩")
-    retrieved_embeddings: Optional[Any] = Field(None, description="(디버그용) 검색된 임베딩")
+    # input_embedding: Optional[Any] = Field(None, description="(디버그용) 입력 임베딩")
+    # retrieved_embeddings: Optional[Any] = Field(None, description="(디버그용) 검색된 임베딩")
 
 class DiagnosisResultsCreate(BaseModel):
     diagnosis_id: str = Field(..., description="진단 ID (UUID)")

@@ -9,93 +9,102 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import asyncio
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 2, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
     """
-    증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다.
-    1. 입력을 임베딩하여 벡터스토어에서 유사 질병 Top-K 검색
-    2. LLM에 컨텍스트와 함께 질의하여 진단 생성
-    3. 결과 반환
+    증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다. (CoT 프롬프팅 적용)
+    1. Redis에서 캐시된 데이터(이미지 설명, 증상, CV 분석 결과 등) 조회
+    2. 모든 입력 정보를 종합하여 임베딩 생성 및 유사 질병 Top-K 검색
+    3. LLM에 구조화된 정보와 명시적인 CoT 단계를 포함한 프롬프트로 질의
+    4. 결과 반환
     """
     try:
         # 1. diagnosis_id 기반 redis에서 데이터 조회
         from src.app.utils.redis_client import get_from_redis
         diagnosis_id = request.diagnosis_id
-        redis_keys = [
-            f"image_description:{diagnosis_id}",
-            f"symptoms:{diagnosis_id}",
-            f"other_symptom:{diagnosis_id}",
-            f"classification:{diagnosis_id}"
-        ]
-        values = [get_from_redis(key) for key in redis_keys]
+        
+        # 각 데이터를 개별 변수로 명확하게 받습니다.
+        image_description = get_from_redis(f"image_description:{diagnosis_id}")
+        symptoms = get_from_redis(f"symptoms:{diagnosis_id}")
+        other_symptom = get_from_redis(f"other_symptom:{diagnosis_id}")
+        classification_data = get_from_redis(f"classification:{diagnosis_id}")
 
         # classification에서 가장 높은 확률의 클래스 추출
-        classification_data = values[3]
         top_classification = extract_top_classification(classification_data)
-        values[3] = top_classification
 
-        input_text = flatten_and_join(values)
-        input_text = str(input_text)
+        # 2. 임베딩 생성을 위한 텍스트 조합
+        input_values = [image_description, symptoms, other_symptom, top_classification]
+        input_text_for_embedding = flatten_and_join(input_values)
+        input_text_for_embedding = str(input_text_for_embedding)
 
         # 2. 임베딩 생성
-        input_embedding = await get_text_embedding(input_text)
-        if input_embedding is None or (hasattr(input_embedding, '__len__') and len(input_embedding) == 0):
+        input_embedding = await get_text_embedding(input_text_for_embedding)
+        if not input_embedding or (hasattr(input_embedding, '__len__') and len(input_embedding) == 0):
             logging.error("임베딩 생성 실패: input_embedding is None or empty")
             return DiagnosisResponse(
                 diagnosis="임베딩 생성 실패",
-                top_k_diseases=[],
-                input_embedding=None,
-                retrieved_embeddings=None
+                top_k_diseases=[]
+                # input_embedding=None,
+                # retrieved_embeddings=None
             )
 
-        # 3. 유사 질병 검색 (생성된 임베딩 사용)
-        similar_diseases = retrieve_similar_diseases(input_text, top_k=top_k, input_embedding=input_embedding)
+        # 3. 유사 질병 검색
+        similar_diseases = retrieve_similar_diseases(input_text_for_embedding, top_k=top_k, input_embedding=input_embedding)
         if not similar_diseases:
             return DiagnosisResponse(
                 diagnosis="유사 질병을 찾을 수 없습니다.",
-                top_k_diseases=[],
-                input_embedding=input_embedding,
-                retrieved_embeddings=None
+                top_k_diseases=[]
+                # input_embedding=input_embedding,
+                # retrieved_embeddings=None
             )
 
-        # 4. LLM에 컨텍스트와 함께 질의
+         # 4. LLM에 컨텍스트와 함께 질의
         context = "\n\n".join([
             f"[{i+1}] Disease Name: {d.get('metadata', {}).get('disease', '')}\n"
             f"Symptoms: {', '.join(d.get('metadata', {}).get('symptoms', []))}\n"
             f"Skin Site: {', '.join(d.get('metadata', {}).get('skin_site', []))}\n"
-            f"Skin Description: {d.get('content', '')}"
+            f"Disease Information: {', '.join(d.get('metadata', {}).get('text', []))}\n"
             for i, d in enumerate(similar_diseases)
         ])
         user_prompt = f"""
-Below is data about infant skin diseases. The documents are sorted by relevance, with the first and last documents being the most relevant.
+        You are an AI diagnostic assistant powered by the knowledge of a pediatric specialist. Your mission is to synthesize user-provided information with retrieved medical knowledge to provide a careful, clear, and reassuring preliminary diagnosis for concerned parents.
 
-{context}
+        ### User-Provided Information
+        - **Image Analysis:** {image_description if image_description else "No information provided"}
+        - **Key Symptoms:** {symptoms if symptoms else "No information provided"}
+        - **Other Symptoms:** {other_symptom if other_symptom else "No information provided"}
+        - **Computer Vision Analysis Reference:** {top_classification if top_classification else "Below threshold or no information provided"}
 
----
+        ### Retrieved Medical Knowledge from Vector DB
+        {context}
 
-[User Input]
-{input_text}
+        ---
 
----
+        ### Analysis and Diagnosis Instructions
+        
+        **1. Chain of Thought - This is your internal thinking process. Do not include this section's title or steps in the final output.**
+        Before generating the final response, perform an internal analysis by following the logical steps below.
 
-Based on the above data and user input, please follow these guidelines:
-1. Primarily reference the first and last documents, analyze the similar disease information and input logically step-by-step (Chain-of-Thought) to derive the most likely skin condition.
-2. Clearly state the diagnosis reason and evidence.
-3. Provide the response in Korean, using a warm and friendly tone that will reassure worried parents.
+        *   **Step 1: Information Synthesis:** Summarize the key features from the 'User-Provided Information'.
+        *   **Step 2: Hypothesis & Comparison:** Compare the synthesized information against each disease candidate from the retrieved knowledge.
+        *   **Step 3: Evaluation & Final Hypothesis:** Select the most probable disease and formulate the reasoning.
 
-Please structure your response in the following format:
-- 최종 진단 (Final Diagnosis): 진단명
-- 진단 이유 (Diagnosis Reason): 이미지나 증상을 통해 해당 진단에 도달한 이유
-- 중증도 (Severity): 중등도를 판단하며, 간단한 설명 포함
-- 병원 내원 필요 여부 (Need for Hospital Visit): 즉시 방문 필요 여부를 명확하게 안내
-- 가정 내 처치 방법 (Home Care Instructions): 부모님이 쉽게 실천할 수 있는 구체적이고 실용적인 조언
+        ---
 
-Guidelines for the response:
-1. Maintain accurate medical terms but add simple explanations in parentheses when needed
-2. Use warm and empathetic expressions that can reassure worried parents
-3. Write in formal Korean (존댓말)
-4. Choose vocabulary that reduces anxiety and builds trust
-5. Avoid directly referencing document numbers (e.g., "문서 1과 4"). Instead, refer to the source naturally (e.g., "참고 자료에 따르면", "의료 정보를 바탕으로", "관련 자료에서는" 등)
-"""
+        **### Final Response Generation ###**
+        Now, based on your internal 'Chain of Thought' conclusions, generate ONLY the final, parent-facing response. The response MUST strictly follow the format below and start EXACTLY with "- Final Diagnosis:".
+
+        - **Final Diagnosis:** [The most likely diagnosis name]
+        - **Diagnosis Reason:** [Logically explain the reasoning...]
+        - **Severity:** [Assess the severity...]
+        - **Need for Hospital Visit:** [Provide a clear guideline...]
+        - **Home Care Instructions:** [Provide 2-3 specific methods...]
+
+        **Guidelines for the Final Response:**
+        - Maintain a warm, empathetic, yet professional tone.
+        - Do not reference document numbers. Instead, use natural phrases like "According to medical information...".
+        - Use language that reduces anxiety and builds trust.
+        """
+        # raw_llm_output = await query_llm_with_context(user_prompt)
         diagnosis = await query_llm_with_context(user_prompt)
         
         # 5. 결과 조합 및 반환
@@ -104,24 +113,24 @@ Guidelines for the response:
                 disease=d.get('metadata', {}).get('disease', ''),
                 symptoms=d.get('metadata', {}).get('symptoms', []),
                 skin_site=d.get('metadata', {}).get('skin_site', []),
-                disease_information=d.get('content', ''),
+                disease_information=d.get('metadata', {}).get('text', []),  #d.get('content', '')[:100],
                 similarity=d.get('score', None),
             )
             for d in similar_diseases
         ]
         return DiagnosisResponse(
             diagnosis=diagnosis,
-            top_k_diseases=top_k_diseases,
-            input_embedding=input_embedding,
-            retrieved_embeddings=[d.get('embedding') for d in similar_diseases]
+            top_k_diseases=top_k_diseases
+            # input_embedding=input_embedding,
+            # retrieved_embeddings=[d.get('embedding') for d in similar_diseases]
         )
     except Exception as e:
         logging.exception("진단 RAG 서비스 오류: %s", e)
         return DiagnosisResponse(
             diagnosis=f"진단 중 오류 발생: {e}",
-            top_k_diseases=[],
-            input_embedding=None,
-            retrieved_embeddings=None
+            top_k_diseases=[]
+            # input_embedding=None,
+            # retrieved_embeddings=None
         )
 
 async def save_diagnosis_result(
