@@ -1,6 +1,6 @@
 # 진단(RAG) 서비스
 from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisIdInput, DiagnosisResponse, DiseaseInfo
-from src.app.utils.llm_client import get_text_embedding, create_diagnosis_chain
+from src.app.utils.llm_client import get_text_embedding, create_llm_model
 from src.app.utils.pinecone_client import retrieve_similar_diseases
 from src.app.domain.diagnosis.schemas.diagnostician import DiagnosisResultsCreate
 from src.app.domain.diagnosis.crud.diagnostician import create_diagnosis_result
@@ -10,6 +10,98 @@ import logging
 import asyncio
 from typing import Dict, Any
 import json
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+def create_diagnosis_chain():
+    """
+    진단을 위한 LCEL 체인을 생성합니다.
+    """
+    model = create_llm_model(
+        model_name="gemini-2.0-flash",
+        temperature=0,
+        max_output_tokens=1000,
+        provider="google"
+    )
+    
+    # 진단 프롬프트 템플릿
+    diagnosis_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are an AI diagnostic assistant powered by the knowledge of a pediatric specialist. Your mission is to synthesize user-provided information with retrieved medical knowledge to provide a careful, clear, and reassuring preliminary diagnosis for concerned parents."),
+        ("human", """
+        ### User-Provided Information
+        - **Image Analysis:** {image_description}
+        - **Key Symptoms:** {symptoms}
+        - **Other Symptoms:** {other_symptom}
+        - **Computer Vision Analysis Reference:** {classification}
+
+        ### Retrieved Medical Knowledge from Vector DB
+        {context}
+
+        ---
+
+        ### Analysis and Diagnosis Instructions
+        
+        **1. Chain of Thought - This is your internal thinking process. Do not include this section's title or steps in the final output.**
+        Before generating the final response, perform an internal analysis by following the logical steps below.
+
+        *   **Step 1: Information Synthesis:** Summarize the key features from the 'User-Provided Information'.
+        *   **Step 2: Hypothesis & Comparison:** Compare the synthesized information against each disease candidate from the retrieved knowledge.
+        *   **Step 3: Evaluation & Final Hypothesis:** Select the most probable disease and formulate the reasoning.
+
+        ---
+
+        **### Final Response Generation ###**
+        Now, based on your internal 'Chain of Thought' conclusions, generate ONLY the final, parent-facing response. The response MUST strictly follow the format below and start EXACTLY with "- Final Diagnosis:".
+
+        - **Final Diagnosis:** [The most likely diagnosis name]
+        - **Diagnosis Reason:** [Logically explain the reasoning...]
+        - **Severity:** [Assess the severity...]
+        - **Need for Hospital Visit:** [Provide a clear guideline...]
+        - **Home Care Instructions:** [Provide 2-3 specific methods...]
+
+        **Guidelines for the Final Response:**
+        - Maintain a warm, empathetic, yet professional tone.
+        - Do not reference document numbers. Instead, use natural phrases like "According to medical information...".
+        - Use language that reduces anxiety and builds trust.
+        """)
+    ])
+
+    # 번역 프롬프트 템플릿
+    translation_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a medical translator specializing in Korean-English translation."),
+        ("human", """
+        다음은 AI 진단 결과입니다. 이 결과를 한국어로 번역해주세요.
+        번역 시 다음 사항을 반드시 지켜주세요:
+        1. 원본의 형식("- Final Diagnosis:", "- Diagnosis Reason:" 등)을 최대한 유지한 채 번역만 해주세요.
+        2. 의학 용어는 정확하게 번역해주세요.
+        4. 불필요한 설명이나 추가 내용은 포함하지 마세요.
+
+        원본 진단 결과:
+        {diagnosis_result}
+        """)
+    ])
+
+    # 진단 체인
+    diagnosis_chain = (
+        diagnosis_prompt 
+        | model 
+        | StrOutputParser()
+    )
+
+    # 번역 체인
+    translation_chain = (
+        {"diagnosis_result": diagnosis_chain}
+        | translation_prompt 
+        | model 
+        | StrOutputParser()
+    )
+
+    # 병렬 실행을 위한 체인 구성
+    return RunnableParallel(
+        diagnosis=diagnosis_chain,
+        translation=translation_chain
+    )
 
 async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
     """
@@ -67,13 +159,13 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
 
                 # 필수 필드 추출
                 disease = metadata.get('disease', '') if isinstance(metadata, dict) else ''
-                symptoms = metadata.get('symptoms', []) if isinstance(metadata, dict) else []
+                disease_symptoms = metadata.get('symptoms', []) if isinstance(metadata, dict) else []
                 skin_site = metadata.get('skin_site', []) if isinstance(metadata, dict) else []
                 text = metadata.get('text', '') if isinstance(metadata, dict) else ''
 
                 context_parts.append(
                     f"[{i+1}] Disease Name: {disease}\n"
-                    f"Symptoms: {', '.join(symptoms)}\n"
+                    f"Symptoms: {', '.join(disease_symptoms)}\n"
                     f"Skin Site: {', '.join(skin_site)}\n"
                     f"Disease Information: {text}\n"
                 )

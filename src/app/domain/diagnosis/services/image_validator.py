@@ -1,6 +1,9 @@
 # 이미지 검증 api
 from src.app.utils.s3_client import get_image_from_s3
 from src.app.utils.llm_client import create_llm_model, encode_image_to_base64, process_image_with_llm
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 # 이미지 검증 서비스
 class DermaValidatorService:
@@ -8,7 +11,32 @@ class DermaValidatorService:
         self.model = create_llm_model(
             model_name="gemini-2.0-flash-lite",
             temperature=0,
-            max_output_tokens=200
+            max_output_tokens=20
+        )
+        self.chain = self._create_validation_chain()
+    
+    def _create_validation_chain(self):
+        """
+        이미지 검증을 위한 LCEL 체인을 생성합니다.
+        """
+        validation_prompt = ChatPromptTemplate.from_messages([
+            ("system", """
+            You are an expert in medical image analysis. 
+            You need to determine whether the image provided by the user is related to skin conditions.
+            A skin-related image refers to images showing skin diseases, skin conditions, or parts of the skin.
+            
+            If the image is related to skin, output only 'YES'.
+            If the image is not related to skin, output only 'NO'.
+            Do not provide any explanation.
+            """),
+            ("human", "Please determine whether this image is related to skin conditions.")
+        ])
+
+        return (
+            {"base64_image": RunnablePassthrough()}
+            | validation_prompt
+            | self.model
+            | StrOutputParser()
         )
     
     async def validate_skin_image(self, diagnosis_id: str):
@@ -30,28 +58,10 @@ class DermaValidatorService:
         base64_image = encode_image_to_base64(image_data)
         
         # 이미지 검증
-        is_skin_related = await self._validate_with_llm(base64_image)
+        content = await self.chain.ainvoke(base64_image)
+        is_skin_related = 'YES' in content.upper()
+        
         return {"is_skin_related": is_skin_related}
-    
-    async def _validate_with_llm(self, base64_image: str) -> bool:
-        """LLM을 사용하여 이미지가 피부 관련 이미지인지 검증합니다."""
-        system_prompt = """
-        You are an expert in medical image analysis. 
-        You need to determine whether the image provided by the user is related to skin conditions.
-        A skin-related image refers to images showing skin diseases, skin conditions, or parts of the skin.
-        
-        If the image is related to skin, output only 'YES'.
-        If the image is not related to skin, output only 'NO'.
-        Do not provide any explanation.
-        """
-        
-        user_prompt = "Please determine whether this image is related to skin conditions."
-        # "이 이미지가 피부 관련 이미지인지 판단해주세요."
-        
-        content = await process_image_with_llm(self.model, base64_image, system_prompt, user_prompt)
-        
-        # 응답 확인 (YES 또는 NO)
-        return 'YES' in content.upper()
 
 # 서비스 인스턴스 생성
 derma_validator_service = DermaValidatorService()
