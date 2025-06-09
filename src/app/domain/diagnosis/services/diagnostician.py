@@ -18,14 +18,23 @@ def create_diagnosis_chain():
     """
     진단을 위한 LCEL 체인을 생성합니다.
     """
-    model = create_llm_model(
-        model_name="gemini-2.0-flash",
+    # 진단 모델
+    diagnosis_model = create_llm_model(
+        model_name="gpt-4.1-mini-2025-04-14",
+        temperature=0,
+        max_output_tokens=1000,
+        provider="openai"
+    )
+    
+    # 번역 모델
+    translation_model = create_llm_model(
+        model_name="gemini-2.0-flash-lite",
         temperature=0,
         max_output_tokens=1000,
         provider="google"
     )
     
-    # 진단 프롬프트 템플릿
+    # 진단 프롬프트
     diagnosis_prompt = ChatPromptTemplate.from_messages([
         ("system", "You are an AI diagnostic assistant powered by the knowledge of a pediatric specialist. Your mission is to synthesize user-provided information with retrieved medical knowledge to provide a careful, clear, and reassuring preliminary diagnosis for concerned parents."),
         ("human", """
@@ -67,7 +76,7 @@ def create_diagnosis_chain():
         """)
     ])
 
-    # 번역 프롬프트 템플릿
+    # 번역 프롬프트
     translation_prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a medical translator specializing in Korean-English translation."),
         ("human", """
@@ -82,26 +91,28 @@ def create_diagnosis_chain():
         """)
     ])
 
-    # 진단 체인
-    diagnosis_chain = (
-        diagnosis_prompt 
-        | model 
+    # 기본 진단 체인
+    _diagnosis_chain = (
+        diagnosis_prompt
+        | diagnosis_model
         | StrOutputParser()
     )
 
     # 번역 체인
-    translation_chain = (
-        {"diagnosis_result": diagnosis_chain}
-        | translation_prompt 
-        | model 
+    # 이 체인은 'diagnosis_result' 키를 가진 딕셔너리를 입력으로 기대합니다.
+    _translation_chain = (
+        translation_prompt
+        | translation_model
         | StrOutputParser()
     )
 
-    # 병렬 실행을 위한 체인 구성
-    return RunnableParallel(
-        diagnosis=diagnosis_chain,
-        translation=translation_chain
+    # 최종 체인 구성:
+    final_chain = _diagnosis_chain | RunnableParallel(
+        diagnosis=RunnablePassthrough(),  # 원본 진단 결과 (문자열)
+        translation=RunnablePassthrough() | (lambda text_input: {"diagnosis_result": text_input}) | _translation_chain # 번역된 결과 (문자열)
     )
+    
+    return final_chain
 
 async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
     """
