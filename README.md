@@ -7,7 +7,7 @@
 ![Pinecone](https://img.shields.io/badge/Pinecone-6.0.2-red)
 
 > 본 README.md는 모찌케어 FastAPI 서버에 대한 주요 정보만을 담고 있습니다.  
-> [Blog](https://baxdailygit.github.io/) 👈 AI 기반 영유아 피부 질환 진단 서비스 개발 과정을 블로그에 작성하였습니다.  
+> [Blog](https://baxdailygit.github.io/projects/Reflections-on-the-Development-Process-of-an-AI-Powered-Infant-and-Toddler-Skin-Disease-Diagnosis-Service) 👈 AI 기반 영유아 피부 질환 진단 서비스 개발 과정을 블로그에 작성하였습니다.  
 > [DeepWiki](https://deepwiki.com/BabyCareAI/babycareai-fastapi) 👈딥위키를 통해 해당 레포지토리의 궁금한 점을 물어보세요.  
 
 ## 📋 프로젝트 개요
