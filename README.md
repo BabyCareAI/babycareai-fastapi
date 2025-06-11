@@ -121,50 +121,6 @@ curl -X POST "http://localhost:8000/api/v1/diagnosis/RAG" \
 http://localhost:8000/docs
 ```
 
-## 📡 API 엔드포인트
-
-### 진단 워크플로우
-
-| 순서 | 엔드포인트 | 메서드 | 설명 |
-|------|------------|--------|------|
-| 1 | `/api/v1/diagnosis/validate` | POST | 피부 이미지 유효성 검증 |
-| 2 | `/api/v1/diagnosis/image-description` | POST | 피부 상태 설명 생성 |
-| 3 | `/api/v1/diagnosis/other-symptom` | POST | 기타 증상 입력 처리 |
-| 4 | `/api/v1/diagnosis/rag` | POST | RAG 기반 최종 진단 |
-
-### 예시 요청
-
-**1. 이미지 검증**
-```bash
-curl -X POST "http://localhost:8000/api/v1/diagnosis/validate" \
-  -H "Content-Type: application/json" \
-  -d '{"diagnosis_id": "uuid-from-upload"}'
-```
-
-**2. 이미지 설명 생성**
-```bash
-curl -X POST "http://localhost:8000/api/v1/diagnosis/image-description" \
-  -H "Content-Type: application/json" \
-  -d '{"diagnosis_id": "uuid-from-upload"}'
-```
-
-**3. 기타 증상 입력**
-```bash
-curl -X POST "http://localhost:8000/api/v1/diagnosis/other-symptom" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "diagnosis_id": "uuid-from-upload",
-    "other_symptom": "아이가 잠을 못자고, 자꾸 칭얼거려요."
-  }'
-```
-
-**4. 최종 진단**
-```bash
-curl -X POST "http://localhost:8000/api/v1/diagnosis/rag" \
-  -H "Content-Type: application/json" \
-  -d '{"diagnosis_id": "uuid-from-upload"}'
-```
-
 ## 🔧 기술 스택
 
 - **Framework**: FastAPI 0.115.0
@@ -234,11 +190,11 @@ deploy.yml
 │  ├─ myapi.iml
 │  └─ vcs.xml
 ├─ Dockerfile
-LICENSE
-README.md
-appspec.yml
+├─ LICENSE
+├─ README.md
+├─ appspec.yml
 ├─ diagnosis_id_6.csv
-pytest.ini
+├─ pytest.ini
 ├─ report.html
 ├─ report.json
 ├─ requirements.txt
