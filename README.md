@@ -143,7 +143,7 @@ http://localhost:8000/docs
 ### 클라우드 서비스
 - **AWS S3**: boto3 - 이미지 저장소
 
-### 🔄 진단 프로세스 [3](#1-2) 
+### 🔄 진단 프로세스
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/21cec315-2e86-4668-9ce3-22601490749a" />
 
 ### RAG 파이프라인
