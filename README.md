@@ -69,6 +69,11 @@ uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
 http://localhost:8000/docs
 ```
 
+## 📖 API 문서  
+  
+- **Swagger UI**: [https://api.babycareai.net/fastapi/docs](https://api.babycareai.net/fastapi/docs)  
+- **ReDoc**: [https://api.babycareai.net/fastapi/redoc](https://api.babycareai.net/fastapi/redoc)
+
 ## 📡 API 엔드포인트
 
 ### 진단 워크플로우
