@@ -8,7 +8,7 @@ from src.app.domain.diagnosis.utils.data_processor import flatten_and_join, extr
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, AsyncGenerator
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
@@ -20,10 +20,10 @@ def create_diagnosis_chain():
     """
     # 진단 모델
     diagnosis_model = create_llm_model(
-        model_name="gpt-4.1-mini-2025-04-14",
+        model_name="gpt-4.1-mini-2025-04-14", #gemini-2.0-flash-lite
         temperature=0,
         max_output_tokens=1000,
-        provider="openai"
+        provider="openai" #google
     )
     
     # 번역 모델
@@ -114,13 +114,13 @@ def create_diagnosis_chain():
     
     return final_chain
 
-async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> DiagnosisResponse:
+async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: AsyncSession = None) -> AsyncGenerator[str, None]:
     """
     증상/부위/설명을 바탕으로 RAG 기반 진단을 수행합니다. (CoT 프롬프팅 적용)
     1. Redis에서 캐시된 데이터(이미지 설명, 증상, CV 분석 결과 등) 조회
     2. 모든 입력 정보를 종합하여 임베딩 생성 및 유사 질병 Top-K 검색
     3. LLM에 구조화된 정보와 명시적인 CoT 단계를 포함한 프롬프트로 질의
-    4. 결과 반환 및 저장
+    4. 결과 스트리밍 반환 및 저장
     """
     try:
         # 1. diagnosis_id 기반 redis에서 데이터 조회
@@ -144,31 +144,25 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
         input_embedding = await get_text_embedding(input_text_for_embedding)
         if not input_embedding or (hasattr(input_embedding, '__len__') and len(input_embedding) == 0):
             logging.error("임베딩 생성 실패: input_embedding is None or empty")
-            return DiagnosisResponse(
-                diagnosis="임베딩 생성 실패",
-                top_k_diseases=[]
-            )
+            yield "임베딩 생성 실패"
+            return
 
         # 3. 유사 질병 검색
         similar_diseases = retrieve_similar_diseases(input_text_for_embedding, top_k=top_k, input_embedding=input_embedding)
         if not similar_diseases:
-            return DiagnosisResponse(
-                diagnosis="유사 질병을 찾을 수 없습니다.",
-                top_k_diseases=[]
-            )
+            yield "유사 질병을 찾을 수 없습니다."
+            return
 
         # 4. 컨텍스트 구성
         context_parts = []
         for i, d in enumerate(similar_diseases):
             try:
-                # 메타데이터 추출
                 metadata = {}
                 if isinstance(d, dict):
                     metadata = d.get('metadata', {})
                 elif hasattr(d, 'metadata'):
                     metadata = d.metadata
 
-                # 필수 필드 추출
                 disease = metadata.get('disease', '') if isinstance(metadata, dict) else ''
                 disease_symptoms = metadata.get('symptoms', []) if isinstance(metadata, dict) else []
                 skin_site = metadata.get('skin_site', []) if isinstance(metadata, dict) else []
@@ -198,11 +192,17 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
             "context": context
         }
 
-        # 체인 실행
-        result = await chain.ainvoke(chain_input)
-        
-        # 6. 진단 결과 저장
-        if db:
+        # 전체 진단 결과를 저장할 변수
+        full_diagnosis = ""
+
+        # 체인 실행 및 스트리밍
+        async for chunk in chain.astream(chain_input):
+            if "translation" in chunk:
+                full_diagnosis += chunk["translation"]
+                yield chunk["translation"]
+
+        # 6. 진단 결과 저장 (전체 결과를 저장)
+        if db and full_diagnosis:
             await save_diagnosis_result(
                 db=db,
                 diagnosis_id=diagnosis_id,
@@ -210,19 +210,13 @@ async def diagnose_with_rag(request: DiagnosisIdInput, top_k: int = 4, db: Async
                 symptoms=convert_to_json_string(symptoms),
                 other_symptom=convert_to_json_string(other_symptom),
                 classification=convert_to_json_string(classification_data),
-                diagnosis=result["translation"],
+                diagnosis=full_diagnosis,
                 top_k_diseases=json.dumps(similar_diseases)
             )
 
-        return DiagnosisResponse(
-            diagnosis=result["translation"]
-        )
-
     except Exception as e:
         logging.exception("진단 RAG 서비스 오류: %s", e)
-        return DiagnosisResponse(
-            diagnosis=f"진단 중 오류 발생: {e}"
-        )
+        yield f"진단 중 오류 발생: {e}"
 
 async def save_diagnosis_result(
     db: AsyncSession,
