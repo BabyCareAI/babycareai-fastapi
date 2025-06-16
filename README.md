@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/831f890b-b3d2-49e8-81b9-368f5b0a3102
 
 
 ## 🏗️ 시스템 아키텍처
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/802c8119-086c-4449-995c-d6d38d49ff3f" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/7cff679d-a45b-4b59-8329-f1cb55f7f89d" />
 
 ## 🚀 빠른 시작
 
