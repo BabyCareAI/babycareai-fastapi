@@ -10,6 +10,8 @@
 > [Blog](https://baxdailygit.github.io/projects/Reflections-on-the-Development-Process-of-an-AI-Powered-Infant-and-Toddler-Skin-Disease-Diagnosis-Service) 👈 AI 기반 영유아 피부 질환 진단 서비스 개발 과정을 블로그에 작성하였습니다.  
 > [DeepWiki](https://deepwiki.com/BabyCareAI/babycareai-fastapi) 👈딥위키를 통해 해당 레포지토리의 궁금한 점을 물어보세요.  
 
+https://github.com/user-attachments/assets/831f890b-b3d2-49e8-81b9-368f5b0a3102
+
 ## 📋 프로젝트 개요
 
 **모찌케어 AI**는 아기 피부 병변 사진과 증상 정보를 종합적으로 분석하여 질환명 예측, 중증도 분석, 병원 내원 필요 여부 판단, 가정 내 처치 방법 안내를 제공하는 AI 기반 서비스입니다.
